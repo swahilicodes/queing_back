@@ -1,5 +1,5 @@
 const express = require('express');
-const { Patient } = require('../models/index')
+const { Patient, Queue } = require('../models/index')
 const router = express.Router();
 
 
@@ -12,6 +12,16 @@ router.post('/register_patient', async (req, res) => {
         const patient = await Patient.create(req.body)
         res.json(patient);
         }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+
+// get patients
+router.get('/get_patients', async (req, res) => {
+    try {
+        const patient = await Patient.findAll()
+        res.json(patient);
     } catch (err) {
         res.status(500).json({ error: err });
     }
