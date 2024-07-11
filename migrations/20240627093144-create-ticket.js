@@ -9,6 +9,11 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
+      status: {
+        type: Sequelize.STRING,
+        allowNull: false,
+        default:"waiting"
+      },
       ticket_no: {
         type: Sequelize.STRING(10),
         allowNull: false,

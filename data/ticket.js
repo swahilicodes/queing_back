@@ -1,6 +1,7 @@
 const express = require('express');
 const { Ticket } = require('../models/index')
 const router = express.Router();
+const { Op } = require('sequelize')
 
 
 router.post('/create_ticket', async (req, res) => {
@@ -25,7 +26,8 @@ router.post('/create_ticket', async (req, res) => {
             const ticket = await Ticket.create({
                 category,
                 phone,
-                ticket_no
+                ticket_no,
+                status: "waiting"
             })
             res.json(ticket);
         }
@@ -36,9 +38,66 @@ router.post('/create_ticket', async (req, res) => {
 });
 
 // get queues
-router.get('/getAll', async (req, res, next) => {
+router.get('/getTickets', async (req, res, next) => {
     try {
-        const queue = await Queue.findAll()
+        const queue = await Ticket.findAll({
+            where: {status: "waiting"}
+        })
+        res.json(queue);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues
+router.get('/getWeekTickets', async (req, res, next) => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 7);
+    try {
+        const queue = await Ticket.findAll({
+            where: {
+                createdAt: {
+                  [Op.between]: [sevenDaysAgo, today]
+                }
+              }
+        })
+        res.json(queue);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues
+router.get('/getMonthTickets', async (req, res, next) => {
+    const today = new Date();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(today.getDate() - 30);
+    try {
+        const queue = await Ticket.findAll({
+            where: {
+                createdAt: {
+                  [Op.between]: [sevenDaysAgo, today]
+                }
+              }
+        })
+        res.json(queue);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues
+router.get('/getTodayTickets', async (req, res, next) => {
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+const endOfDay = new Date(today);
+endOfDay.setHours(23, 59, 59, 999);
+    try {
+        const queue = await Ticket.findAll({
+            where: {
+                createdAt: {
+                  [Op.between]: [today, endOfDay]
+                }
+              }
+        })
         res.json(queue);
     } catch (err) {
         res.status(500).json({ error: err });
