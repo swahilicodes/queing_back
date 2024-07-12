@@ -4,6 +4,8 @@ const cors = require('cors');
 const patient = require('./data/patient')
 const queue = require('./data/queue')
 const ticket = require('./data/ticket')
+const service = require('./data/services')
+const counter = require('./data/counters')
 const morgan = require('morgan')
 
 const app = express();
@@ -15,6 +17,8 @@ app.use(bodyParser.json());
 app.use('/patients',patient)
 app.use('/queues',queue)
 app.use('/tickets',ticket)
+app.use('/services',service)
+app.use('/counters',counter)
 
 // Error handling middleware
 // app.use((err, req, res, next) => {
