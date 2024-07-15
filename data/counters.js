@@ -45,6 +45,15 @@ router.get('/get_counters', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+router.get('/get_all_counters', async (req, res) => {
+    try {
+        const curr = await Counter.findAll()
+        res.json(curr);
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
 router.put('/delete_counter/:id', async (req, res) => {
     const id = req.params.id
     try {

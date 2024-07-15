@@ -6,6 +6,8 @@ const queue = require('./data/queue')
 const ticket = require('./data/ticket')
 const service = require('./data/services')
 const counter = require('./data/counters')
+const attendant = require('./data/attendant')
+const user = require('./data/users')
 const morgan = require('morgan')
 
 const app = express();
@@ -19,6 +21,8 @@ app.use('/queues',queue)
 app.use('/tickets',ticket)
 app.use('/services',service)
 app.use('/counters',counter)
+app.use('/attendants',attendant)
+app.use('/users',user)
 
 // Error handling middleware
 // app.use((err, req, res, next) => {
