@@ -17,6 +17,14 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
       },
+      service: {
+        type: Sequelize.STRING,
+        allowNull: false,
+      },
+      counter: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       phone: {
         type: Sequelize.STRING,
         allowNull: false,

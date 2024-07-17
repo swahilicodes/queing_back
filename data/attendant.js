@@ -3,6 +3,11 @@ const { Attendant, User } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
+const app = express();
+const socketIo = require('socket.io');
+const http = require("http")
+const server = http.createServer(app);
+const io = socketIo(server);
 
 
 router.post('/create_attendant', async (req, res) => {
@@ -23,8 +28,13 @@ router.post('/create_attendant', async (req, res) => {
             const att = await Attendant.findOne({
                 where: {phone}
             })
+            const user = await User.findOne({
+                where: {phone}
+            })
             if(att){
                 return res.status(400).json({ error: 'attendant exists' });  
+            }else if(user){
+                return res.status(400).json({ error: 'user exists' }); 
             }else{
                 const newAtt = await Attendant.create({
                     name,
@@ -38,8 +48,17 @@ router.post('/create_attendant', async (req, res) => {
                     name,
                     phone,
                     role,
-                    password:newPass
+                    password:newPass,
+                    service,
+                    counter
                 })
+                io.on("connection",(socket)=> {
+                    console.log('emitting diode please wait...')
+                    io.emit('data',newAtt)
+                    // socket.on("disconnect", ()=> {
+                    //   console.log("websocket disconnected")
+                    // })
+                  })
                 res.json(newAtt)
             }
         }

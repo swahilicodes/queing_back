@@ -49,6 +49,28 @@ router.get('/getTickets', async (req, res, next) => {
     }
 });
 // get queues
+router.get('/getCatTickets', async (req, res, next) => {
+    const category = req.query.category
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    try {
+        const curr = await Ticket.findAndCountAll({
+            where: {category},
+            offset: offset,
+            limit: pageSize,
+            order: [['id', 'ASC']]
+        })
+        res.json({
+            data: curr.rows,
+            totalItems: curr.count,
+            totalPages: Math.ceil(curr.count / pageSize),
+          });
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues
 router.get('/getWeekTickets', async (req, res, next) => {
     const today = new Date();
     const sevenDaysAgo = new Date(today);

@@ -34,6 +34,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    service: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    counter: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
   }, {
     sequelize,
     modelName: 'User',
