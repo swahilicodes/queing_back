@@ -53,5 +53,35 @@ router.get('/get_user', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+// Get current administrator
+router.put('/edit_user/:id', async (req, res) => {
+    const id = req.params.id
+    const {oldPass,newPass} = req.body
+    try {
+        if(oldPass.trim()===""){
+            return res.status(400).json({ error: 'the old password is empty' }); 
+        }else if(newPass.trim()===""){
+            return res.status(400).json({ error: 'the new password is empty' });
+        }else{
+            const user = await User.findOne({
+                where: {id}
+            })
+            if(!user){
+                return res.status(400).json({ error: 'user not found' });
+            }else{
+                const correct = await bcrypt.compare(oldPass,user.password)
+                if(!correct){
+                    return res.status(400).json({ error: 'the old password is not correct' });
+                }else{
+                    const newPassnew = await bcrypt.hash(newPass,6)
+                    user.update({password: newPassnew})
+                    res.json(user)
+                }
+            }
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 module.exports = router;

@@ -47,38 +47,15 @@ app.use('/admins',admins)
 server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
+io.on('connection', (socket) => {
+  // console.log('a user connected');
 
-io.on("connection",(socket)=> {
-  console.log('websocket connected there wait...')
-  socket.on("disconnect", ()=> {
-    console.log("websocket disconnected")
-  })
-})
+  socket.on('disconnect', () => {
+    // console.log('user disconnected');
+  });
 
-// WebSocket Server
-// const wss = new WebSocket.Server({ server });
-
-// wss.on('connection', (ws) => {
-//   console.log('WebSocket client connected');
-
-//   ws.send('Connected to WebSocket server');
-
-//   ws.on('message', (message) => {
-//     console.log(`Received message => ${message}`);
-//     // Handle incoming messages as needed
-//   });
-
-//   ws.on('close', () => {
-//     console.log('WebSocket client disconnected');
-//   });
-// });
-
-// Handle clean shutdown
-// process.on('SIGINT', async () => {
-//   console.log('Closing server gracefully');
-//   await sequelize.close();
-//   app.close(() => {
-//     console.log('Server closed');
-//     process.exit(0);
-//   });
-// });
+  socket.on('data', (msg) => {
+    io.emit('data', msg);
+    console.log('message: ' + msg);
+  });
+});

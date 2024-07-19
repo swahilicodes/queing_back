@@ -2,6 +2,12 @@ const express = require('express');
 const { Ticket } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
+const app = express();
+const socketIo = require('socket.io');
+const http = require("http");
+const { off } = require('process');
+const server = http.createServer(app);
+const io = socketIo(server);
 
 
 router.post('/create_ticket', async (req, res) => {
@@ -41,7 +47,8 @@ router.post('/create_ticket', async (req, res) => {
 router.get('/getTickets', async (req, res, next) => {
     try {
         const queue = await Ticket.findAll({
-            where: {status: "waiting"}
+            where: {status: "waiting"},
+            limit: 10
         })
         res.json(queue);
     } catch (err) {
@@ -56,7 +63,8 @@ router.get('/getCatTickets', async (req, res, next) => {
     const offset = (page - 1) * pageSize;
     try {
         const curr = await Ticket.findAndCountAll({
-            where: {category},
+            // where: {category},
+            where: {category,status:"done"},
             offset: offset,
             limit: pageSize,
             order: [['id', 'ASC']]
@@ -121,6 +129,25 @@ endOfDay.setHours(23, 59, 59, 999);
               }
         })
         res.json(queue);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// edit ticket
+router.put('/edit_ticket/:id', async (req, res, next) => {
+const id = req.params.id
+    try {
+        const ticket = await Ticket.findOne({
+            where: { id }
+        })
+        if(!ticket){
+            return res.status(400).json({ error: 'ticket not found' });
+        }else {
+            ticket.update({
+                status: "done"
+            })
+            res.json(ticket)
+        }
     } catch (err) {
         res.status(500).json({ error: err });
     }
