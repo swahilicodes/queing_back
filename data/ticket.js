@@ -1,5 +1,5 @@
 const express = require('express');
-const { Ticket } = require('../models/index')
+const { Ticket, Attendant } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const app = express();
@@ -58,13 +58,14 @@ router.get('/getTickets', async (req, res, next) => {
 // get queues
 router.get('/getCatTickets', async (req, res, next) => {
     const category = req.query.category
+    const status = req.query.status
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
     try {
         const curr = await Ticket.findAndCountAll({
             // where: {category},
-            where: {category,status:"done"},
+            where: {category,status:status??"waiting"},
             offset: offset,
             limit: pageSize,
             order: [['id', 'ASC']]
@@ -74,6 +75,18 @@ router.get('/getCatTickets', async (req, res, next) => {
             totalItems: curr.count,
             totalPages: Math.ceil(curr.count / pageSize),
           });
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues counter
+router.get('/getTicketCounter', async (req, res, next) => {
+    const service = req.query.category
+    try {
+        const curr = await Attendant.findOne({
+            where: {service: service},
+        })
+        res.json(curr);
     } catch (err) {
         res.status(500).json({ error: err });
     }
