@@ -24,7 +24,7 @@ router.post('/login', async (req, res) => {
                 if(!correct){
                     return res.status(400).json({ error: 'password not correct' });
                 }else{
-                const token = jwt.sign({phone,correct},"swahili codes",{expiresIn: 36*36})
+                const token = jwt.sign({phone,correct},"swahili codes",{expiresIn: "1y"})
                 res.json(token);
                 }
             }

@@ -62,10 +62,50 @@ router.get('/getCatTickets', async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
+    console.log("status is ",status,category)
+    try {
+        if(status.trim()===""){
+            const curr = await Ticket.findAndCountAll({
+                // where: {category},
+                where: {category,status:"waiting"},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        }else{
+            const curr = await Ticket.findAndCountAll({
+                // where: {category},
+                where: {category,status},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get waiting
+router.get('/getWaitingTickets', async (req, res, next) => {
+    const category = req.query.category
+    const status = req.query.status
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
     try {
         const curr = await Ticket.findAndCountAll({
             // where: {category},
-            where: {category,status:status??"waiting"},
+            where: {category,status:"waiting"},
             offset: offset,
             limit: pageSize,
             order: [['id', 'ASC']]
@@ -149,6 +189,7 @@ endOfDay.setHours(23, 59, 59, 999);
 // edit ticket
 router.put('/edit_ticket/:id', async (req, res, next) => {
 const id = req.params.id
+const status = req.body
     try {
         const ticket = await Ticket.findOne({
             where: { id }
@@ -157,7 +198,7 @@ const id = req.params.id
             return res.status(400).json({ error: 'ticket not found' });
         }else {
             ticket.update({
-                status: "done"
+                status: status.status
             })
             res.json(ticket)
         }
