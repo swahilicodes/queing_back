@@ -9,6 +9,7 @@ const counter = require('./data/counters')
 const attendant = require('./data/attendant')
 const admins = require('./data/admins')
 const user = require('./data/users')
+const advert = require('./data/adverts')
 const morgan = require('morgan')
 // const WebSocket = require('ws');
 const http = require("http")
@@ -41,6 +42,7 @@ app.use('/counters',counter)
 app.use('/attendants',attendant)
 app.use('/users',user)
 app.use('/admins',admins)
+app.use('/adverts',advert)
 //socketSetup(io);
 
 // app.listen(port, () => {
