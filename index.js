@@ -29,8 +29,12 @@ const port = 5000;
 app.use(cors(corsOptions));
 const server = http.createServer(app);
 const io = new Server(server,{cors: {
-  origin: "*"
-}});
+  origin: "*",
+  methods: ["GET", "POST","PUT"]
+},
+  pingTimeout: 10000,
+  pingInterval: 5000
+});
 
 app.use(cors());
 app.use(bodyParser.json());
