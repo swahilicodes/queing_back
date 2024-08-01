@@ -87,6 +87,15 @@ router.get('/get_admins', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+router.get('/get_all_admins', async (req, res) => {
+    try {
+        const ad = await Admin.findAll()
+        res.json(ad);
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
 router.put('/delete_admin/:id', async (req, res) => {
     const id = req.params.id
     try {

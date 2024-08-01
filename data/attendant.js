@@ -87,6 +87,15 @@ router.get('/get_attendants', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+router.get('/get_all_attendants', async (req, res) => {
+    try {
+        const curr = await Attendant.findAll()
+        res.json(curr);
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
 router.put('/delete_attendant/:id', async (req, res) => {
     const id = req.params.id
     try {
