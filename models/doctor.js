@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Patient extends Model {
+  class Doctor extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -13,55 +13,41 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  Patient.init({
+  Doctor.init({
     name: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    clinic: {
+    phone: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    mr_no: {
+    service: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    age: {
+    room: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    sex: {
+    password: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    reg_date: {
-      type: DataTypes.DATE,
-      allowNull: false
-    },
-    reg_time: {
-      type: DataTypes.TIME,
-      allowNull: false
-    },
-    consult_date: {
-      type: DataTypes.DATE,
-      allowNull: true
-    },
-    consult_time: {
-      type: DataTypes.TIME,
-      allowNull: true
-    },
-    doctor: {
+    role: {
       type: DataTypes.STRING,
-      allowNull: true
+      allowNull: false,
+      default: "doctor"
     },
-    consult_doctor: {
+    display_photo: {
       type: DataTypes.STRING,
-      allowNull: true
-    }
+      allowNull: true,
+      default: "doctor"
+    },
   }, {
     sequelize,
-    modelName: 'Patient',
-    tableName: 'patients'
+    modelName: 'Doctor',
+    tableName: 'doctors'
   });
-  return Patient;
+  return Doctor;
 };

@@ -55,6 +55,17 @@ router.get('/getTickets', async (req, res, next) => {
         res.status(500).json({ error: err });
     }
 });
+// get all queues
+router.get('/getAllTickets', async (req, res, next) => {
+    try {
+        const queue = await Ticket.findAll({
+            where: {status: "waiting"},
+        })
+        res.json(queue);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
 // get queues
 router.get('/getCatTickets', async (req, res, next) => {
     const category = req.query.category
