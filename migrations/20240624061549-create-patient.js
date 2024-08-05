@@ -30,19 +30,19 @@ module.exports = {
         allowNull: false
       },
       reg_date: {
-        type: Sequelize.DATE,
+        type: Sequelize.STRING,
         allowNull: false
       },
       reg_time: {
-        type: Sequelize.TIME,
+        type: Sequelize.STRING,
         allowNull: false
       },
       consult_date: {
-        type: Sequelize.DATE,
+        type: Sequelize.STRING,
         allowNull: true
       },
       consult_time: {
-        type: Sequelize.TIME,
+        type: Sequelize.STRING,
         allowNull: true
       },
       doctor: {
