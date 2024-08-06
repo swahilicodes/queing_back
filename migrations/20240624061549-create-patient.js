@@ -29,20 +29,16 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      reg_date: {
+      status: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      reg_time: {
-        type: Sequelize.STRING,
+      reg_date: {
+        type: Sequelize.DATE,
         allowNull: false
       },
       consult_date: {
-        type: Sequelize.STRING,
-        allowNull: true
-      },
-      consult_time: {
-        type: Sequelize.STRING,
+        type: Sequelize.DATE,
         allowNull: true
       },
       doctor: {

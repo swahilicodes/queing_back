@@ -34,20 +34,16 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    reg_date: {
+    status: {
       type: DataTypes.STRING,
       allowNull: false
     },
-    reg_time: {
-      type: DataTypes.STRING,
+    reg_date: {
+      type: DataTypes.DATE,
       allowNull: false
     },
     consult_date: {
-      type: DataTypes.STRING,
-      allowNull: true
-    },
-    consult_time: {
-      type: DataTypes.STRING,
+      type: DataTypes.DATE,
       allowNull: true
     },
     doctor: {
