@@ -37,6 +37,7 @@ router.get('/get_patients', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+
 // get queues
 router.get('/getCatPatients', async (req, res, next) => {
     const category = req.query.category
@@ -61,7 +62,7 @@ router.get('/getCatPatients', async (req, res, next) => {
               });
         }else{
             const curr = await Patient.findAndCountAll({
-                // where: {clinic},
+                // where: {category},
                 where: {clinic:category,status},
                 offset: offset,
                 limit: pageSize,
@@ -77,6 +78,86 @@ router.get('/getCatPatients', async (req, res, next) => {
         res.status(500).json({ error: err });
     }
 });
+// get queues
+router.get('/getVitalPatients', async (req, res, next) => {
+    const category = req.query.category
+    const status = req.query.status
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    console.log("status is ",status,category)
+    try {
+        if(status.trim()===""){
+            const curr = await Patient.findAndCountAll({
+                // where: {category},
+                where: {status:"vitaling"},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        }else{
+            const curr = await Patient.findAndCountAll({
+                // where: {category},
+                where: {status:"vitaling"},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues
+// router.get('/getCatPatients', async (req, res, next) => {
+//     const category = req.query.category
+//     const status = req.query.status
+//     const page = parseInt(req.query.page) || 1;
+//     const pageSize = parseInt(req.query.pageSize) || 10;
+//     const offset = (page - 1) * pageSize;
+//     console.log("status is ",status,category)
+//     try {
+//         if(status.trim()===""){
+//             const curr = await Patient.findAndCountAll({
+//                 // where: {category},
+//                 where: {clinic:category,status:"waiting"},
+//                 offset: offset,
+//                 limit: pageSize,
+//                 order: [['id', 'ASC']]
+//             })
+//             res.json({
+//                 data: curr.rows,
+//                 totalItems: curr.count,
+//                 totalPages: Math.ceil(curr.count / pageSize),
+//               });
+//         }else{
+//             const curr = await Patient.findAndCountAll({
+//                 // where: {clinic},
+//                 where: {clinic:category,status},
+//                 offset: offset,
+//                 limit: pageSize,
+//                 order: [['id', 'ASC']]
+//             })
+//             res.json({
+//                 data: curr.rows,
+//                 totalItems: curr.count,
+//                 totalPages: Math.ceil(curr.count / pageSize),
+//               });
+//         }
+//     } catch (err) {
+//         res.status(500).json({ error: err });
+//     }
+// });
 // edit patient
 router.put('/edit_patient/:id', async (req, res, next) => {
     const id = req.params.id

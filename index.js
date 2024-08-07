@@ -11,6 +11,7 @@ const admins = require('./data/admins')
 const user = require('./data/users')
 const advert = require('./data/adverts')
 const doctor = require('./data/doctors')
+const nurse = require('./data/nurse')
 const morgan = require('morgan')
 // const WebSocket = require('ws');
 const http = require("http")
@@ -49,6 +50,7 @@ app.use('/users',user)
 app.use('/admins',admins)
 app.use('/adverts',advert)
 app.use('/doctors',doctor)
+app.use('/nurse',nurse)
 //socketSetup(io);
 
 // app.listen(port, () => {
