@@ -19,9 +19,14 @@ module.exports = {
         allowNull: false,
         unique: true
       },
-      category: {
+      stage: {
         type: Sequelize.STRING,
-        allowNull: false,
+        defaultValue: "meds"
+        // allowNull: false,
+      },
+      disability: {
+        type: Sequelize.STRING,
+        defaultValue: null
       },
       phone: {
         type: Sequelize.STRING,

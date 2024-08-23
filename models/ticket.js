@@ -19,9 +19,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
-    category: {
+    stage: {
       type: DataTypes.STRING,
-      allowNull: false,
+      defaultValue: "meds"
+      // allowNull: false,
+    },
+    disability: {
+      type: DataTypes.STRING,
+      defaultValue: null
     },
     status: {
       type: DataTypes.STRING,

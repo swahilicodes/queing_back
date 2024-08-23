@@ -11,12 +11,10 @@ const io = socketIo(server);
 
 
 router.post('/create_ticket', async (req, res) => {
-    const { phone,category} = req.body;
+    const { phone,disability} = req.body;
     let ticket_no
     try {
-        if(category.trim() === ''){
-            return res.status(400).json({ error: 'category is required' });
-        }else if(phone.trim() === ''){
+        if(phone.trim() === ''){
             return res.status(400).json({ error: 'phone is required' });
         }else{
             const lastTicket = await Ticket.findOne({
@@ -30,7 +28,7 @@ router.post('/create_ticket', async (req, res) => {
                 ticket_no = (numericPart + 1).toString().padStart(3, '0');
             }
             const ticket = await Ticket.create({
-                category,
+                disability,
                 phone,
                 ticket_no,
                 status: "waiting"
@@ -128,6 +126,53 @@ router.get('/getWaitingTickets', async (req, res, next) => {
           });
     } catch (err) {
         res.status(500).json({ error: err });
+    }
+});
+// get waiting
+router.get('/getMedsTickets', async (req, res, next) => {
+    const disable = req.query.disable
+    const status = req.query.status
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    if(disable.trim()==="disabled") {
+        try {
+            console.log(disable)
+            const curr = await Ticket.findAndCountAll({
+                // where: {category},
+                // where: {stage:"meds",status:status,disability:{ [Op.not]: null }},
+                where: {stage:"meds",status:status,disability: { [Op.not]: "" }},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
+    }else{
+        try {
+            console.log(disable)
+            const curr = await Ticket.findAndCountAll({
+                // where: {category},
+                // where: {stage:"meds",status:status,disability:{ [Op.not]: null }},
+                where: {stage:"meds",status:status,disability: { [Op.eq]: "" }},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
     }
 });
 // get queues counter
