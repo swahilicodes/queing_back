@@ -14,6 +14,11 @@ module.exports = {
         allowNull: false,
         default:"waiting"
       },
+      dateTime: {
+        type: Sequelize.DATE,
+        defaultValue: new Date(),
+        allowNull: false,
+      },
       ticket_no: {
         type: Sequelize.STRING(10),
         allowNull: false,

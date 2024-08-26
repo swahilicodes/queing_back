@@ -132,47 +132,92 @@ router.get('/getWaitingTickets', async (req, res, next) => {
 router.get('/getMedsTickets', async (req, res, next) => {
     const disable = req.query.disable
     const status = req.query.status
+    const phone = req.query.phone
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
     if(disable.trim()==="disabled") {
-        try {
-            console.log(disable)
-            const curr = await Ticket.findAndCountAll({
-                // where: {category},
-                // where: {stage:"meds",status:status,disability:{ [Op.not]: null }},
-                where: {stage:"meds",status:status,disability: { [Op.not]: "" }},
-                offset: offset,
-                limit: pageSize,
-                order: [['id', 'ASC']]
-            })
-            res.json({
-                data: curr.rows,
-                totalItems: curr.count,
-                totalPages: Math.ceil(curr.count / pageSize),
-              });
-        } catch (err) {
-            res.status(500).json({ error: err });
+        if(phone.trim() !== ''){
+            try {
+                const curr = await Ticket.findAndCountAll({
+                    where: {stage:"meds",status:status,disability: { [Op.not]: "" },phone: {[Op.like]: `%${phone}%`}},
+                    offset: offset,
+                    limit: pageSize,
+                    order: [['dateTime', 'ASC']]
+                })
+                res.json({
+                    data: curr.rows,
+                    totalItems: curr.count,
+                    totalPages: Math.ceil(curr.count / pageSize),
+                  });
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }  
+        }else{
+            try {
+                const curr = await Ticket.findAndCountAll({
+                    where: {stage:"meds",status:status,disability: { [Op.not]: "" }},
+                    offset: offset,
+                    limit: pageSize,
+                    order: [['dateTime', 'ASC']]
+                })
+                res.json({
+                    data: curr.rows,
+                    totalItems: curr.count,
+                    totalPages: Math.ceil(curr.count / pageSize),
+                  });
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
         }
     }else{
-        try {
-            console.log(disable)
-            const curr = await Ticket.findAndCountAll({
-                // where: {category},
-                // where: {stage:"meds",status:status,disability:{ [Op.not]: null }},
-                where: {stage:"meds",status:status,disability: { [Op.eq]: "" }},
-                offset: offset,
-                limit: pageSize,
-                order: [['id', 'ASC']]
-            })
-            res.json({
-                data: curr.rows,
-                totalItems: curr.count,
-                totalPages: Math.ceil(curr.count / pageSize),
-              });
-        } catch (err) {
-            res.status(500).json({ error: err });
+        if(phone.trim() !== ''){
+            try {
+                const curr = await Ticket.findAndCountAll({
+                    where: {stage:"meds",status:status,disability: { [Op.eq]: "" },phone: {[Op.like]:`%${phone}%`}},
+                    offset: offset,
+                    limit: pageSize,
+                    order: [['dateTime', 'ASC']]
+                })
+                res.json({
+                    data: curr.rows,
+                    totalItems: curr.count,
+                    totalPages: Math.ceil(curr.count / pageSize),
+                  });
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }  
+        }else{
+            try {
+                const curr = await Ticket.findAndCountAll({
+                    where: {stage:"meds",status:status,disability: { [Op.eq]: "" }},
+                    offset: offset,
+                    limit: pageSize,
+                    order: [['dateTime', 'ASC']]
+                })
+                res.json({
+                    data: curr.rows,
+                    totalItems: curr.count,
+                    totalPages: Math.ceil(curr.count / pageSize),
+                  });
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
         }
+    }
+});
+// get queues counter
+router.get('/getTicketTotal', async (req, res, next) => {
+    const status = req.query.status
+    const stage = req.query.stage
+    try {
+        const curr = await Ticket.findAll({
+            where: {stage:stage,status:status},
+            order: [['id', 'ASC']]
+        })
+        res.json(curr);
+    } catch (err) {
+        res.status(500).json({ error: err });
     }
 });
 // get queues counter
@@ -255,6 +300,25 @@ const status = req.body
         }else {
             ticket.update({
                 status: status.status
+            })
+            res.json(ticket)
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// penalize
+router.put('/penalize/:id', async (req, res, next) => {
+const id = req.params.id
+    try {
+        const ticket = await Ticket.findOne({
+            where: { id }
+        })
+        if(!ticket){
+            return res.status(400).json({ error: 'ticket not found' });
+        }else {
+            ticket.update({
+                dateTime: new Date()
             })
             res.json(ticket)
         }

@@ -24,6 +24,11 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: "meds"
       // allowNull: false,
     },
+    dateTime: {
+      type: DataTypes.DATE,
+      defaultValue: new Date(),
+      allowNull: false,
+    },
     disability: {
       type: DataTypes.STRING,
       defaultValue: null
