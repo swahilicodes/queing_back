@@ -5,16 +5,18 @@ const { Op } = require('sequelize')
 
 
 router.post('/create_counter', async (req, res) => {
-    const { name } = req.body;
+    const { name, namba } = req.body;
     try {
         if(name.trim() === ''){
             return res.status(400).json({ error: 'name is required' });
+        }else if(namba.trim() === ''){
+            return res.status(400).json({ error: 'number is required' });
         }else{
             const service = await Counter.findOne({
-                where: {name}
+                where: {namba}
             })
             if(service){
-                return res.status(400).json({ error: 'service exists' });   
+                return res.status(400).json({ error: 'counter exists' });   
             }else{
                 const newService = await Counter.create(req.body)
                 res.json(newService);
@@ -75,6 +77,8 @@ router.put('/edit_counter/:id', async (req, res) => {
     try {
         if(newData.name.trim()===""){
             return res.status(404).json({ error: 'name is empty' }); 
+        }if(newData.namba.trim()===""){
+            return res.status(404).json({ error: 'number is empty' }); 
         }else{
             const service = await Counter.findByPk(id);
             if (!service) {

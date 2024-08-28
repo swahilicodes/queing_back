@@ -1,42 +1,117 @@
 const express = require('express');
-const { Patient, Queue } = require('../models/index')
+const { Patient, Queue, sequelize } = require('../models/index')
+const {Op} = require('sequelize')
 const router = express.Router();
 
 
 router.post('/register_patient', async (req, res) => {
-    const { name, clinic, mr_no,age, sex,status, reg_date, reg_time,consult_date, consult_time, doctor, consult_doctor} = req.body;
+    const { name, clinic, stage, mr_no,age, sex,status, reg_date, reg_time,consult_date, consult_time, doctor, consult_doctor} = req.body;
+    const transaction = await sequelize.transaction();
     try {
+        console.log('registering patients')
         if(name.trim() === ''){
             return res.status(400).json({ error: 'name is required' });
         }else{
         const pat = await Patient.findOne({
-            where: {mr_no}
+            where: {mr_no},
+            transaction
         })
-        if(pat){
-            return
-        }else{
-            const patient = await Patient.create(req.body)
+        if(!pat){
+            const patient = await Patient.create(req.body,transaction)
             res.json(patient);
         }
+        await transaction.commit();
         }
     } catch (err) {
         res.status(500).json({ error: err });
     }
 });
 
+// delete duplicate patients
+router.put('/duplicate_patients', async (req, res)=> {
+    try {
+        // Step 1: Find all duplicates based on patientName and mrNumber
+        const duplicates = await Patient.findAll({
+          attributes: [
+            'mr_no',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+          ],
+          group: ['mr_no'],
+          having: sequelize.literal('COUNT(*) > 1') // having more than 1 means it's a duplicate
+        });
+    
+        // Step 2: Iterate through each duplicate group and delete extra entries
+        for (const duplicate of duplicates) {
+          const { mr_no } = duplicate.get();
+    
+          // Find all records matching the duplicate criteria
+          const duplicateRecords = await Patient.findAll({
+            where: {
+              mr_no: mr_no
+            },
+            order: [['id', 'ASC']] // To keep the first record and delete the rest
+          });
+    
+          // Keep the first record and delete the rest
+          if (duplicateRecords.length > 1) {
+            const recordsToDelete = duplicateRecords.slice(1);
+            const idsToDelete = recordsToDelete.map(record => record.id);
+            await Patient.destroy({
+              where: {
+                id: {
+                  [Op.in]: idsToDelete
+                }
+              }
+            });
+            console.log('records deleted successfully');
+          }else{
+            console.log('no duplicates');
+          }
+        }
+      } catch (error) {
+        console.error('Error deleting duplicates:', error);
+      }
+})
+
 // get patients
 router.get('/get_patients', async (req, res) => {
-    const {clinic,status} = req.params
-    console.log('clinic name ',req.query.clinic)
-    try {
-        const patient = await Patient.findAll({
-            where: {clinic:`${req.query.clinic}`,status:`${req.query.status}`}
-        })
-        res.json(patient);
-    } catch (err) {
-        res.status(500).json({ error: err });
+    const status = req.query.status
+    if(status.trim() !== ''){
+        console.log('status is ',status)
+        try {
+            const patient = await Patient.findAll({
+                where: {status},
+                limit: 10
+            })
+            res.json(patient);
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
+    }else{
+        try {
+            const patient = await Patient.findAll({
+                limit: 10
+            })
+            res.json(patient);
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
     }
 });
+
+//get total status
+router.get('/status_totals', async (req, res) => {
+    const status = req.query.status
+    const stage = req.query.stage
+    try{
+        const stats = await Patient.findAll({
+            where: {status,stage}
+        })
+        res.json(stats)
+    }catch(err) {
+        res.status(500).json({ error: err });  
+    }
+})
 
 // get queues
 router.get('/getCatPatients', async (req, res, next) => {
@@ -118,48 +193,8 @@ router.get('/getVitalPatients', async (req, res, next) => {
         res.status(500).json({ error: err });
     }
 });
-// get queues
-// router.get('/getCatPatients', async (req, res, next) => {
-//     const category = req.query.category
-//     const status = req.query.status
-//     const page = parseInt(req.query.page) || 1;
-//     const pageSize = parseInt(req.query.pageSize) || 10;
-//     const offset = (page - 1) * pageSize;
-//     console.log("status is ",status,category)
-//     try {
-//         if(status.trim()===""){
-//             const curr = await Patient.findAndCountAll({
-//                 // where: {category},
-//                 where: {clinic:category,status:"waiting"},
-//                 offset: offset,
-//                 limit: pageSize,
-//                 order: [['id', 'ASC']]
-//             })
-//             res.json({
-//                 data: curr.rows,
-//                 totalItems: curr.count,
-//                 totalPages: Math.ceil(curr.count / pageSize),
-//               });
-//         }else{
-//             const curr = await Patient.findAndCountAll({
-//                 // where: {clinic},
-//                 where: {clinic:category,status},
-//                 offset: offset,
-//                 limit: pageSize,
-//                 order: [['id', 'ASC']]
-//             })
-//             res.json({
-//                 data: curr.rows,
-//                 totalItems: curr.count,
-//                 totalPages: Math.ceil(curr.count / pageSize),
-//               });
-//         }
-//     } catch (err) {
-//         res.status(500).json({ error: err });
-//     }
-// });
 // edit patient
-router.put('/edit_patient/:id', async (req, res, next) => {
+router.put('/edit_status/:id', async (req, res, next) => {
     const id = req.params.id
     const status = req.body
         try {
@@ -171,6 +206,27 @@ router.put('/edit_patient/:id', async (req, res, next) => {
             }else {
                 ticket.update({
                     status: status.status
+                })
+                res.json(ticket)
+            }
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
+    });
+// finish patient
+router.put('/finish_patient/:id', async (req, res, next) => {
+    const id = req.params.id
+    const status = req.body
+        try {
+            const ticket = await Patient.findOne({
+                where: { id }
+            })
+            if(!ticket){
+                return res.status(400).json({ error: 'ticket not found' });
+            }else {
+                ticket.update({
+                    status: "waiting",
+                    stage:"accounts"
                 })
                 res.json(ticket)
             }

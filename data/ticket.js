@@ -1,5 +1,5 @@
 const express = require('express');
-const { Ticket, Attendant } = require('../models/index')
+const { Ticket, Attendant, Counter } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const app = express();
@@ -44,11 +44,19 @@ router.post('/create_ticket', async (req, res) => {
 // get queues
 router.get('/getTickets', async (req, res, next) => {
     try {
-        const queue = await Ticket.findAll({
+        const tickets = await Ticket.findAll({
             where: {status: "waiting"},
             limit: 10
         })
-        res.json(queue);
+        const counters = await Counter.findAll();
+        const result = tickets.map(ticket => {
+            const counter = counters.find(item => item.name === ticket.stage)
+            return {
+                ticket: ticket,
+                counter: counter
+            };
+        });
+        res.json(result);
     } catch (err) {
         res.status(500).json({ error: err });
     }

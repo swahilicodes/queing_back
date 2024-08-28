@@ -25,6 +25,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      stage: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       sex: {
         type: Sequelize.STRING,
         allowNull: false
