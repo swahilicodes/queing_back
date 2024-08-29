@@ -1,5 +1,5 @@
 const express = require('express');
-const { Patient, Queue, sequelize } = require('../models/index')
+const { Patient, Counter, sequelize } = require('../models/index')
 const {Op} = require('sequelize')
 const router = express.Router();
 
@@ -76,25 +76,101 @@ router.put('/duplicate_patients', async (req, res)=> {
 // get patients
 router.get('/get_patients', async (req, res) => {
     const status = req.query.status
+    const mr_no = req.query.mr_no
     if(status.trim() !== ''){
-        console.log('status is ',status)
-        try {
-            const patient = await Patient.findAll({
-                where: {status},
-                limit: 10
-            })
-            res.json(patient);
-        } catch (err) {
-            res.status(500).json({ error: err });
+        console.log('mr number ',mr_no)
+        if(mr_no.trim()===''){
+            try {
+                const patient = await Patient.findAll({
+                    where: {status},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }else{
+            try {
+                const patient = await Patient.findAll({
+                    where: {status,mr_no: {[Op.like]:`%${mr_no}%`}},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
         }
     }else{
-        try {
-            const patient = await Patient.findAll({
-                limit: 10
-            })
-            res.json(patient);
-        } catch (err) {
-            res.status(500).json({ error: err });
+        if(mr_no.trim()===''){
+            try {
+                const patient = await Patient.findAll({
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }else{
+            try {
+                const patient = await Patient.findAll({
+                    where: {mr_no: {[Op.like]: `%${mr_no}%`}},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }
+    }
+});
+// get accounts patients
+router.get('/get_account_patients', async (req, res) => {
+    const status = req.query.status
+    const mr_no = req.query.mr_no
+    const stage = req.query.stage
+    if(status.trim() !== ''){
+        if(mr_no.trim()===''){
+            try {
+                const patient = await Patient.findAll({
+                    where: {status,stage:stage},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }else{
+            try {
+                const patient = await Patient.findAll({
+                    where: {status,stage:stage,mr_no: {[Op.like]:`%${mr_no}%`}},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }
+    }else{
+        if(mr_no.trim()===''){
+            try {
+                const patient = await Patient.findAll({
+                    where:{stage:stage},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }else{
+            try {
+                const patient = await Patient.findAll({
+                    where: {mr_no: {[Op.like]: `%${mr_no}%`},stage:stage},
+                    limit: 10
+                })
+                res.json(patient);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
         }
     }
 });
@@ -216,7 +292,6 @@ router.put('/edit_status/:id', async (req, res, next) => {
 // finish patient
 router.put('/finish_patient/:id', async (req, res, next) => {
     const id = req.params.id
-    const status = req.body
         try {
             const ticket = await Patient.findOne({
                 where: { id }
@@ -234,4 +309,83 @@ router.put('/finish_patient/:id', async (req, res, next) => {
             res.status(500).json({ error: err });
         }
     });
+// finish accounts patient
+router.put('/finish_accounts_patient/:id', async (req, res, next) => {
+    const id = req.params.id
+    const {service} = req.body
+        try {
+            const ticket = await Patient.findOne({
+                where: { id }
+            })
+            if(!ticket){
+                return res.status(400).json({ error: 'ticket not found' });
+            }else {
+                if(service.trim()===""){
+                    return res.status(400).json({ error: 'service name cannot be empty' });  
+                }else{
+                    if(service.trim()==="cash"){
+                        ticket.update({
+                            status: "waiting",
+                            stage:"payment"
+                        })
+                        res.json(ticket)
+                    }else{
+                        ticket.update({
+                            status: "waiting",
+                            stage:"clinic"
+                        })
+                        res.json(ticket)
+                    }
+                }
+            }
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
+    });
+// edit status 
+router.put('/edit_status/:id', async (req, res, next) => {
+    const id = req.params.id
+    const {stage} = req.body
+        try {
+            console.log('edit stage is ',stage)
+            const ticket = await Patient.findOne({
+                where: { id }
+            })
+            if(!ticket){
+                return res.status(400).json({ error: 'ticket not found' });
+            }else {
+                if(stage.trim()===""){
+                    return res.status(400).json({ error: 'stage name cannot be empty' });  
+                }else{
+                    ticket.update({
+                        status: "waiting",
+                        stage: "clinic"
+                    })
+                    res.json(ticket)
+                }
+            }
+        } catch (err) {
+            res.status(500).json({ error: err });
+        }
+    });
+// get queues
+router.get('/getPatientTickets', async (req, res, next) => {
+    try {
+        const patients = await Patient.findAll({
+            where: {status: "waiting",stage:"accounts"},
+            limit: 10
+        })
+        const counters = await Counter.findAll();
+        const result = patients.map(ticket => {
+            const counter = counters.find(item => item.name === ticket.stage)
+            return {
+                ticket: ticket,
+                counter: counter
+            };
+        });
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
 module.exports = router;
