@@ -13,9 +13,9 @@ router.post('/create_counter', async (req, res) => {
             return res.status(400).json({ error: 'number is required' });
         }else{
             const service = await Counter.findOne({
-                where: {namba}
+                where: {name}
             })
-            if(service){
+            if(service && service.name !== "clinic"){
                 return res.status(400).json({ error: 'counter exists' });   
             }else{
                 const newService = await Counter.create(req.body)

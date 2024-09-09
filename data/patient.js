@@ -343,7 +343,7 @@ router.put('/finish_accounts_patient/:id', async (req, res, next) => {
         }
     });
 // edit status 
-router.put('/edit_status/:id', async (req, res, next) => {
+router.put('/edit_status01/:id', async (req, res, next) => {
     const id = req.params.id
     const {stage} = req.body
         try {
