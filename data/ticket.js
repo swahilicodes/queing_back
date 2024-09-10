@@ -43,20 +43,38 @@ router.post('/create_ticket', async (req, res) => {
 
 // get queues
 router.get('/getTickets', async (req, res, next) => {
+    const disability = req.query.disability
+    console.log('disability is ',disability)
     try {
-        const tickets = await Ticket.findAll({
-            where: {status: "waiting"},
-            limit: 10
-        })
-        const counters = await Counter.findAll();
-        const result = tickets.map(ticket => {
-            const counter = counters.find(item => item.name === ticket.stage)
-            return {
-                ticket: ticket,
-                counter: counter
-            };
-        });
-        res.json(result);
+        if(disability.trim() === "normal"){
+            const tickets = await Ticket.findAll({
+                where: {status: "waiting",disability: { [Op.eq]: "" }},
+                limit: 10
+            })
+            const counters = await Counter.findAll();
+            const result = tickets.map(ticket => {
+                const counter = counters.find(item => item.name === ticket.stage)
+                return {
+                    ticket: ticket,
+                    counter: counter
+                };
+            });
+            res.json(result);
+        }else{
+            const tickets = await Ticket.findAll({
+                where: {status: "waiting",disability: { [Op.not]: "" }},
+                limit: 10
+            })
+            const counters = await Counter.findAll();
+            const result = tickets.map(ticket => {
+                const counter = counters.find(item => item.name === ticket.stage)
+                return {
+                    ticket: ticket,
+                    counter: counter
+                };
+            });
+            res.json(result);
+        }
     } catch (err) {
         res.status(500).json({ error: err });
     }

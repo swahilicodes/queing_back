@@ -370,9 +370,10 @@ router.put('/edit_status01/:id', async (req, res, next) => {
     });
 // get queues
 router.get('/getPatientTickets', async (req, res, next) => {
+    const stage = req.query.stage
     try {
         const patients = await Patient.findAll({
-            where: {status: "waiting",stage:"accounts"},
+            where: {status: "waiting",stage:stage},
             limit: 10
         })
         const counters = await Counter.findAll();
