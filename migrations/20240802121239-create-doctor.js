@@ -25,6 +25,15 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      occupied: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+      },
+      current_patient: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       password: {
         type: Sequelize.STRING,
         allowNull: false

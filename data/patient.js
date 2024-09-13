@@ -1,5 +1,5 @@
 const express = require('express');
-const { Patient, Counter, sequelize } = require('../models/index')
+const { Patient, Counter, sequelize, Doctor } = require('../models/index')
 const {Op} = require('sequelize')
 const router = express.Router();
 
@@ -347,9 +347,15 @@ router.put('/edit_status01/:id', async (req, res, next) => {
     const id = req.params.id
     const {stage} = req.body
         try {
-            console.log('edit stage is ',stage)
             const ticket = await Patient.findOne({
                 where: { id }
+            })
+            const patients = await Patient.findAll({
+                where: {stage: stage,status:"waiting"},
+                order: [['reg_date', 'ASC']]
+            })
+            const doctor = await Doctor.findOne({
+                where: {current_patient: {[Op.eq]: null}}
             })
             if(!ticket){
                 return res.status(400).json({ error: 'ticket not found' });
@@ -357,11 +363,30 @@ router.put('/edit_status01/:id', async (req, res, next) => {
                 if(stage.trim()===""){
                     return res.status(400).json({ error: 'stage name cannot be empty' });  
                 }else{
-                    ticket.update({
-                        status: "waiting",
-                        stage: "clinic"
-                    })
-                    res.json(ticket)
+                    if(patients.length>1 && doctor){
+                        if(patients.length>1){
+                            doctor.update({
+                                current_patient: patients[1].mr_no,
+                                occupied: true
+                            })
+                            ticket.update({
+                                status: "done",
+                            })
+                            res.json(doctor)
+                        }else{
+                            doctor.update({
+                                current_patient: patients[0].mr_no,
+                                occupied: true
+                            })
+                            ticket.update({
+                                status: "done",
+                            })
+                            res.json(doctor)
+                        }
+                    }else{
+                        return res.status(400).json({ error: 'doctors are busy' });
+                    }
+                    // res.json(ticket)
                 }
             }
         } catch (err) {
@@ -371,18 +396,32 @@ router.put('/edit_status01/:id', async (req, res, next) => {
 // get queues
 router.get('/getPatientTickets', async (req, res, next) => {
     const stage = req.query.stage
+    let data01
     try {
         const patients = await Patient.findAll({
             where: {status: "waiting",stage:stage},
             limit: 10
         })
         const counters = await Counter.findAll();
+        const doctors = await Doctor.findAll({
+            where: {service: stage,current_patient: {[Op.ne]: null}}
+        })
         const result = patients.map(ticket => {
             const counter = counters.find(item => item.name === ticket.stage)
-            return {
-                ticket: ticket,
-                counter: counter
-            };
+            if(doctors){
+                const doctor = doctors.find(item => item.current_patient === ticket.mr_no)
+                return {
+                    ticket: ticket,
+                    counter: counter,
+                    doctor: doctor
+                }
+            }else{
+                console.log('no doctors please wait')
+                return {
+                    ticket: ticket,
+                    counter: counter
+                }
+            }
         });
         res.json(result);
     } catch (err) {
