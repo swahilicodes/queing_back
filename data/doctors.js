@@ -1,5 +1,5 @@
 const express = require('express');
-const { Doctor, User, Counter } = require('../models/index')
+const { Doctor, User, Counter, Patient } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
@@ -195,5 +195,57 @@ router.put('/edit_doctor/:id', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+
+// get doctor patient
+router.get('/doctor_patient', async (req, res) => {
+    const {phone} = req.query
+    try{
+        if(!phone){
+            return res.status(400).json({ error: 'phone is required' });
+        }else{
+            const doctor = await Doctor.findOne({
+                where: {phone}
+            })
+            if(doctor){
+                const user = await Patient.findOne({
+                    where: {mr_no: doctor.dataValues.current_patient,status: "waiting",stage:"clinic"}
+                })
+                res.json(user)
+            }
+        }
+    }catch(err) {
+        res.status(500).json({ error: err }); 
+    }
+})
+// get doctor patient
+router.get('/finish_doctor_patient', async (req, res) => {
+    const {phone} = req.query
+    console.log('phone is ',phone)
+    try{
+        if(!phone){
+            return res.status(400).json({ error: 'phone is required' });
+        }else{
+            const doctor = await Doctor.findOne({
+                where: {phone}
+            })
+            if(doctor){
+                const pat = await Patient.findOne({
+                    where: {mr_no: doctor.dataValues.current_patient,stage:"clinic",status:"waiting"}
+                })
+                if(pat){
+                    doctor.update({
+                        current_patient: null
+                    })
+                    pat.update({
+                        status:"done"
+                    })
+                    res.json(doctor)
+                }
+            }
+        }
+    }catch(err) {
+        res.status(500).json({ error: err }); 
+    }
+})
 
 module.exports = router;

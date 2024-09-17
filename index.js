@@ -14,18 +14,27 @@ const nurse = require('./data/nurse')
 const morgan = require('morgan')
 // const WebSocket = require('ws');
 const http = require("http")
-const { Server } =  require('socket.io');
+const { Server } =  require('socket.io',{
+  cors: {
+      origin: "http://localhost:3000", // or "*" to allow all origins
+      methods: ["GET", "POST","PUT"],
+      allowedHeaders: ["my-custom-header"],
+      credentials: true,
+  }
+});
 const socketSetup = require('./src/socket')
 
 const corsOptions ={
   origin:'*', 
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials:true,            //access-control-allow-credentials:true
-  optionSuccessStatus:200
+  optionSuccessStatus:200,
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }
 
 
 const app = express();
+app.use(express.urlencoded({ extended: true }));
 const port = 5000;
 app.use(cors(corsOptions));
 const server = http.createServer(app);
@@ -51,19 +60,17 @@ app.use('/doctors',doctor)
 app.use('/nurse',nurse)
 //socketSetup(io);
 
-// app.listen(port, () => {
-server.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
-});
 io.on('connection', (socket) => {
-  // console.log('a user connected');
-
-  socket.on('disconnect', () => {
-    // console.log('user disconnected');
-  });
 
   socket.on('data', (msg) => {
     io.emit('data', msg);
-    console.log('message: ' + msg);
   });
+   // Handle disconnection
+   socket.on('disconnect', () => {
+    console.log('User disconnected');
+  });
+});
+// app.listen(port, () => {
+  server.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
 });
