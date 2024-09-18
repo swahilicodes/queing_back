@@ -18,10 +18,14 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    name: {
+    service: {
       type: DataTypes.STRING,
       allowNull: false
-    }
+    },
+    subservice: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
   }, {
     sequelize,
     modelName: 'Counter',

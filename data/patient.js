@@ -395,8 +395,40 @@ router.put('/edit_status01/:id', async (req, res, next) => {
     });
 // get queues
 router.get('/getPatientTickets', async (req, res, next) => {
-    const stage = req.query.stage
-    let data01
+    const { stage, clinic } = req.query
+    try {
+        const patients = await Patient.findAll({
+            where: {status: "waiting",stage:stage,clinic: clinic},
+            limit: 10
+        })
+        const counters = await Counter.findAll();
+        const doctors = await Doctor.findAll({
+            where: {service: stage,current_patient: {[Op.ne]: null}}
+        })
+        const result = patients.map(ticket => {
+            const counter = counters.find(item => item.service === ticket.stage)
+            if(doctors){
+                const doctor = doctors.find(item => item.current_patient === ticket.mr_no)
+                return {
+                    ticket: ticket,
+                    counter: counter,
+                    doctor: doctor
+                }
+            }else{
+                return {
+                    ticket: ticket,
+                    counter: counter
+                }
+            }
+        });
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get queues
+router.get('/get_pats', async (req, res, next) => {
+    const { stage, clinic } = req.query
     try {
         const patients = await Patient.findAll({
             where: {status: "waiting",stage:stage},
@@ -407,7 +439,7 @@ router.get('/getPatientTickets', async (req, res, next) => {
             where: {service: stage,current_patient: {[Op.ne]: null}}
         })
         const result = patients.map(ticket => {
-            const counter = counters.find(item => item.name === ticket.stage)
+            const counter = counters.find(item => item.service === ticket.stage)
             if(doctors){
                 const doctor = doctors.find(item => item.current_patient === ticket.mr_no)
                 return {
@@ -416,7 +448,6 @@ router.get('/getPatientTickets', async (req, res, next) => {
                     doctor: doctor
                 }
             }else{
-                console.log('no doctors please wait')
                 return {
                     ticket: ticket,
                     counter: counter

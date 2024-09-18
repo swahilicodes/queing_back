@@ -13,9 +13,13 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
-      name: {
+      service: {
         type: Sequelize.STRING,
         allowNull: false
+      },
+      subservice: {
+        type: Sequelize.STRING,
+        allowNull: true
       },
       createdAt: {
         allowNull: false,

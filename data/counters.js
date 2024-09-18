@@ -5,20 +5,28 @@ const { Op } = require('sequelize')
 
 
 router.post('/create_counter', async (req, res) => {
-    const { name, namba } = req.body;
+    const { service, namba, sub_service} = req.body;
     try {
-        if(name.trim() === ''){
-            return res.status(400).json({ error: 'name is required' });
+        if(service.trim() === ''){
+            return res.status(400).json({ error: 'service is required' });
         }else if(namba.trim() === ''){
             return res.status(400).json({ error: 'number is required' });
+        }else if(service === "clinic" && sub_service.trim()===''){
+            return res.status(400).json({ error: 'clinic is required' });
         }else{
-            const service = await Counter.findOne({
-                where: {name}
+            const service01 = await Counter.findOne({
+                where: {service:service,namba:namba}
             })
-            if(service && service.name !== "clinic"){
+            if(service01){
                 return res.status(400).json({ error: 'counter exists' });   
             }else{
-                const newService = await Counter.create(req.body)
+                const newService = await Counter.create(
+                    {
+                        service,
+                        namba,
+                        subservice: sub_service
+                    }
+                )
                 res.json(newService);
             }
         }
@@ -75,16 +83,22 @@ router.put('/edit_counter/:id', async (req, res) => {
     const newData = req.body
     console.log(newData)
     try {
-        if(newData.name.trim()===""){
-            return res.status(404).json({ error: 'name is empty' }); 
+        if(newData.service.trim()===""){
+            return res.status(404).json({ error: 'service is empty' }); 
         }if(newData.namba.trim()===""){
             return res.status(404).json({ error: 'number is empty' }); 
-        }else{
+        }else if(newData.service==="clinic" && newData.sub_service.trim()===""){
+            return res.status(404).json({ error: 'clinic is empty' });
+        } else{
             const service = await Counter.findByPk(id);
             if (!service) {
             return res.status(404).json({ error: 'service not found' });
             }
-            await service.update(newData);
+            await service.update({
+                service: newData.service,
+                namba: newData.namba,
+                subservice: newData.sub_service !=="clinic"?null:newData.sub_service
+            });
             //res.status(204).end();
             res.json(service);   
         }

@@ -21,6 +21,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      clinic: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       room: {
         type: Sequelize.STRING,
         allowNull: false

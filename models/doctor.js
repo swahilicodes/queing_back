@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    clinic: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     room: {
       type: DataTypes.STRING,
       allowNull: false

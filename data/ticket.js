@@ -53,7 +53,7 @@ router.get('/getTickets', async (req, res, next) => {
             })
             const counters = await Counter.findAll();
             const result = tickets.map(ticket => {
-                const counter = counters.find(item => item.name === ticket.stage)
+                const counter = counters.find(item => item.service === ticket.stage)
                 return {
                     ticket: ticket,
                     counter: counter
@@ -67,7 +67,7 @@ router.get('/getTickets', async (req, res, next) => {
             })
             const counters = await Counter.findAll();
             const result = tickets.map(ticket => {
-                const counter = counters.find(item => item.name === ticket.stage)
+                const counter = counters.find(item => item.service === ticket.stage)
                 return {
                     ticket: ticket,
                     counter: counter

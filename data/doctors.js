@@ -11,17 +11,20 @@ const io = socketIo(server);
 
 
 router.post('/create_doctor', async (req, res) => {
-    const { name, phone, service,room } = req.body;
+    const { name, phone, service,room, clinic } = req.body;
     let newPass = await bcrypt.hash(phone,6)
     let role
+    console.log('clinic is ',clinic)
     try {
         if(name.trim() === ''){
             return res.status(400).json({ error: 'name is required' });
-        }if(phone.trim() === ''){
+        }else if(phone.trim() === ''){
             return res.status(400).json({ error: 'phone is required' });
-        }if(service.trim() === ''){
+        }else if(service.trim() === ''){
             return res.status(400).json({ error: 'service is required' });
-        }if(room.trim() === ''){
+        }else if(service.trim() ==="clinic" && clinic.trim()===""){
+            return res.status(400).json({ error: 'clinic is required' });
+        }else if(room.trim() === ''){
             return res.status(400).json({ error: 'room is required' });
         }else{
             const att = await Doctor.findOne({
@@ -40,12 +43,14 @@ router.post('/create_doctor', async (req, res) => {
                     phone,
                     service,
                     room,
+                    clinic: service !== "clinic"?null:clinic,
                     role: service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"doctor",
                     password: newPass
                 })
                 await User.create({
                     name,
                     phone,
+                    clinic: service !== "clinic"?null:clinic,
                     role:service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"doctor",
                     password:newPass,
                     service,
