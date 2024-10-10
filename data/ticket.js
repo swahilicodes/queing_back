@@ -2,17 +2,12 @@ const express = require('express');
 const { Ticket, Attendant, Counter } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
-const app = express();
-const socketIo = require('socket.io');
-const http = require("http");
-const { off } = require('process');
-const server = http.createServer(app);
-const io = socketIo(server);
 
 
 router.post('/create_ticket', async (req, res) => {
     const { phone,disability} = req.body;
     let ticket_no
+    console.log('creating in the server ',req.body)
     try {
         if(phone.trim() === ''){
             return res.status(400).json({ error: 'phone is required' });
@@ -29,6 +24,7 @@ router.post('/create_ticket', async (req, res) => {
             }
             const ticket = await Ticket.create({
                 disability,
+                disabled: disability !==""? true: false,
                 phone,
                 ticket_no,
                 status: "waiting"
@@ -42,13 +38,17 @@ router.post('/create_ticket', async (req, res) => {
 });
 
 // get queues
-router.get('/getTickets', async (req, res, next) => {
-    const disability = req.query.disability
-    console.log('disability is ',disability)
+router.get('/get_display_tokens', async (req, res, next) => {
+    const {stage} = req.query
     try {
-        if(disability.trim() === "normal"){
             const tickets = await Ticket.findAll({
-                where: {status: "waiting",disability: { [Op.eq]: "" }},
+                // where: {status: "waiting",disability: { [Op.eq]: "" }},
+                where: {status: "waiting", stage: stage},
+
+                order: [
+                    ['disabled', 'DESC'],
+                    ['createdAt', 'ASC'],
+                  ],
                 limit: 10
             })
             const counters = await Counter.findAll();
@@ -60,21 +60,6 @@ router.get('/getTickets', async (req, res, next) => {
                 };
             });
             res.json(result);
-        }else{
-            const tickets = await Ticket.findAll({
-                where: {status: "waiting",disability: { [Op.not]: "" }},
-                limit: 10
-            })
-            const counters = await Counter.findAll();
-            const result = tickets.map(ticket => {
-                const counter = counters.find(item => item.service === ticket.stage)
-                return {
-                    ticket: ticket,
-                    counter: counter
-                };
-            });
-            res.json(result);
-        }
     } catch (err) {
         res.status(500).json({ error: err });
     }

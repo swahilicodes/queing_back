@@ -29,9 +29,17 @@ module.exports = {
         defaultValue: "meds"
         // allowNull: false,
       },
+      mr_no: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       disability: {
         type: Sequelize.STRING,
         defaultValue: null
+      },
+      disabled: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false
       },
       phone: {
         type: Sequelize.STRING,

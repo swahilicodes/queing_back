@@ -3,11 +3,6 @@ const { Doctor, User, Counter, Patient } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
-const app = express();
-const socketIo = require('socket.io');
-const http = require("http")
-const server = http.createServer(app);
-const io = socketIo(server);
 
 
 router.post('/create_doctor', async (req, res) => {

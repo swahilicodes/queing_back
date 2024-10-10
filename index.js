@@ -11,18 +11,6 @@ const user = require('./data/users')
 const advert = require('./data/adverts')
 const doctor = require('./data/doctors')
 const nurse = require('./data/nurse')
-const morgan = require('morgan')
-// const WebSocket = require('ws');
-const http = require("http")
-const { Server } =  require('socket.io',{
-  cors: {
-      origin: "http://localhost:3000", // or "*" to allow all origins
-      methods: ["GET", "POST","PUT"],
-      allowedHeaders: ["my-custom-header"],
-      credentials: true,
-  }
-});
-const socketSetup = require('./src/socket')
 
 const corsOptions ={
   origin:'*', 
@@ -37,14 +25,6 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 const port = 5000;
 app.use(cors(corsOptions));
-const server = http.createServer(app);
-const io = new Server(server,{cors: {
-  origin: "*",
-  methods: ["GET", "POST","PUT"]
-},
-  pingTimeout: 10000,
-  pingInterval: 5000
-});
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -59,18 +39,7 @@ app.use('/adverts',advert)
 app.use('/doctors',doctor)
 app.use('/nurse',nurse)
 //socketSetup(io);
-
-io.on('connection', (socket) => {
-
-  socket.on('data', (msg) => {
-    io.emit('data', msg);
-  });
-   // Handle disconnection
-   socket.on('disconnect', () => {
-    console.log('User disconnected');
-  });
-});
 // app.listen(port, () => {
-  server.listen(port, () => {
+  app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
