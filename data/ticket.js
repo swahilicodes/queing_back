@@ -2,6 +2,7 @@ const express = require('express');
 const { Ticket, Attendant, Counter } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
+const axios = require('axios')
 
 
 router.post('/create_ticket', async (req, res) => {
@@ -62,6 +63,24 @@ router.get('/get_display_tokens', async (req, res, next) => {
             res.json(result);
     } catch (err) {
         res.status(500).json({ error: err });
+    }
+});
+// get all queues
+router.get('/next_stage', async (req, res, next) => {
+    const { mr_number } = req.query
+    if(mr_number.trim() === ""){
+        return res.status(400).json({ error: 'Mr Number is required' });
+    }else{
+        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/patient/${mr_number}`).then((data)=> {
+            if (Array.isArray(data.data.data)) {
+                res.json(data.data.data)
+                //console.log('User data retrieved successfully:', data.data.data);
+              } else {
+                return res.status(400).json({ error: data.data.data });
+              }
+        }).catch((error)=> {
+            return res.status(400).json({ error: error });
+        })
     }
 });
 // get all queues
@@ -311,6 +330,27 @@ const status = req.body
         }else {
             ticket.update({
                 status: status.status
+            })
+            res.json(ticket)
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// edit ticket
+router.put('/finish_token/:id', async (req, res, next) => {
+const id = req.params.id
+const stage = req.body
+    try {
+        const ticket = await Ticket.findOne({
+            where: { id }
+        })
+        if(!ticket){
+            return res.status(400).json({ error: 'ticket not found' });
+        }else {
+            ticket.update({
+                status: "waiting",
+                stage: stage
             })
             res.json(ticket)
         }
