@@ -14,12 +14,28 @@ router.post('/create_counter', async (req, res) => {
         }else if(service === "clinic" && sub_service.trim()===''){
             return res.status(400).json({ error: 'clinic is required' });
         }else{
-            const service01 = await Counter.findOne({
-                where: {service:service,namba:namba}
-            })
-            if(service01){
-                return res.status(400).json({ error: 'counter exists' });   
+            const services = await Counter.findAll()
+            console.log('counters are ')
+            
+            if(services.length > 0){
+                console.log('table has data')
+                const service01 = await Counter.findOne({
+                    where: {service:service,namba:namba}
+                })
+                if(service01){
+                    return res.status(400).json({ error: 'counter exists' }); 
+                }else{
+                    const newService = await Counter.create(
+                        {
+                            service,
+                            namba,
+                            subservice: sub_service
+                        }
+                    )
+                    res.json(newService);
+                }  
             }else{
+                console.log('table does not exist')
                 const newService = await Counter.create(
                     {
                         service,
