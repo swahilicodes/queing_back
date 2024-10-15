@@ -166,10 +166,11 @@ router.get('/getMedsTickets', async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     if(phone.trim() !== ''){ 
         try {
             const disabledToks = await Ticket.findAndCountAll({
-                where: {stage:stage,status:status,disabled: true,phone: {[Op.like]:`%${phone}%`}},
+                where: {stage:stage,status:status,disabled: true,phone: {[Op.like]:`%${phone}%`},createdAt: {[Op.gte]: twelveHoursAgo}},
                 offset: offset,
                 limit: 3,
                 order: [
@@ -178,7 +179,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                   ],
             })
             const normalToks = await Ticket.findAndCountAll({
-                where: {stage:stage,status:status,disabled: false,phone: {[Op.like]:`%${phone}%`}},
+                where: {stage:stage,status:status,disabled: false,phone: {[Op.like]:`%${phone}%`},createdAt: {[Op.gte]: twelveHoursAgo}},
                 offset: offset,
                 limit: 5,
                 order: [['createdAt', 'ASC']],
@@ -191,6 +192,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                     stage: stage,
                     status: status,
                     phone: {[Op.like]:`%${phone}%`},
+                    createdAt: {[Op.gte]: twelveHoursAgo},
                     id: {
                         [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
                     },
@@ -219,7 +221,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
     }else{
         try {
             const disabledToks = await Ticket.findAndCountAll({
-                where: {stage:stage,status:status,disabled: true},
+                where: {stage:stage,status:status,disabled: true,createdAt: {[Op.gte]: twelveHoursAgo}},
                 offset: offset,
                 limit: 3,
                 order: [
@@ -228,7 +230,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                   ],
             })
             const normalToks = await Ticket.findAndCountAll({
-                where: {stage:stage,status:status,disabled: false},
+                where: {stage:stage,status:status,disabled: false,createdAt: {[Op.gte]: twelveHoursAgo}},
                 offset: offset,
                 limit: 5,
                 order: [['createdAt', 'ASC']],
@@ -240,6 +242,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                 where: {
                     stage: stage,
                     status: status,
+                    createdAt: {[Op.gte]: twelveHoursAgo},
                     id: {
                         [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
                     },
@@ -351,7 +354,7 @@ endOfDay.setHours(23, 59, 59, 999);
 // edit ticket
 router.put('/edit_ticket/:id', async (req, res, next) => {
 const id = req.params.id
-const status = req.body
+const {status} = req.body
     try {
         const ticket = await Ticket.findOne({
             where: { id }
@@ -360,7 +363,28 @@ const status = req.body
             return res.status(400).json({ error: 'ticket not found' });
         }else {
             ticket.update({
-                status: status.status
+                status: status
+            })
+            res.json(ticket)
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// edit ticket
+router.put('/penalt/:id', async (req, res, next) => {
+const id = req.params.id
+    try {
+        const ticket = await Ticket.findOne({
+            where: { id }
+        })
+        if(!ticket){
+            return res.status(400).json({ error: 'ticket not found' });
+        }else {
+            ticket.update({
+                disabled: false,
+                disability: "",
+                status: "waiting"
             })
             res.json(ticket)
         }
@@ -371,8 +395,8 @@ const status = req.body
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id
-const {stage, mr_number} = req.body
-console.log('mr number ',mr_number)
+const {stage, mr_number, penalized} = req.body
+console.log('mr number ',mr_number,penalized)
     try {
         const ticket = await Ticket.findOne({
             where: { id }
@@ -387,7 +411,9 @@ console.log('mr number ',mr_number)
             ticket.update({
                 status: "waiting",
                 stage: stage,
-                mr_no: mr_number
+                mr_no: mr_number,
+                disabled: penalized?false: ticket.disabled,
+                disability: penalized?"": ticket.disability,
             })
             res.json(ticket)
         }
@@ -409,6 +435,31 @@ const id = req.params.id
                 dateTime: new Date()
             })
             res.json(ticket)
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// penalize
+router.put('/bill/:id', async (req, res, next) => {
+const id = req.params.id
+const { bill } = req.body
+console.log('billing type ',bill)
+    try {
+        if(bill.trim()===""){
+            return res.status(400).json({ error: 'billing type is empty' }); 
+        }else{
+            const ticket = await Ticket.findOne({
+                where: { id }
+            })
+            if(!ticket){
+                return res.status(400).json({ error: 'ticket not found' });
+            }else {
+                ticket.update({
+                    stage: bill==="insurance"?"clinic":"payment"
+                })
+                res.json(ticket)
+            }
         }
     } catch (err) {
         res.status(500).json({ error: err });

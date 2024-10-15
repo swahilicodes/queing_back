@@ -11,6 +11,8 @@ const user = require('./data/users')
 const advert = require('./data/adverts')
 const doctor = require('./data/doctors')
 const nurse = require('./data/nurse')
+const { Ticket } = require('./models/index')
+const cron = require('node-cron');
 
 const corsOptions ={
   origin:'*', 
@@ -38,8 +40,17 @@ app.use('/admins',admins)
 app.use('/adverts',advert)
 app.use('/doctors',doctor)
 app.use('/nurse',nurse)
-//socketSetup(io);
-// app.listen(port, () => {
+
+cron.schedule('0 0 * * *', async () => {
+  try {
+    await Ticket.destroy({
+      truncate: true
+    });
+    console.log('All tokens deleted successfully at 00:00');
+  } catch (error) {
+    console.error('Error deleting tokens:', error);
+  }
+});
   app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
