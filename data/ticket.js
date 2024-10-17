@@ -41,19 +41,38 @@ router.post('/create_ticket', async (req, res) => {
 // get queues
 router.get('/get_display_tokens', async (req, res, next) => {
     const {stage} = req.query
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     try {
-            const tickets = await Ticket.findAll({
-                // where: {status: "waiting",disability: { [Op.eq]: "" }},
-                where: {status: "waiting", stage: stage},
-
-                order: [
-                    ['disabled', 'DESC'],
-                    ['createdAt', 'ASC'],
-                  ],
-                limit: 10
-            })
+        const disabledToks = await Ticket.findAll({
+            where: {stage:stage,status:"waiting",disabled: true,createdAt: {[Op.gte]: twelveHoursAgo}},
+            limit: 3,
+            order: [
+                // ['disabled', 'DESC'],
+                ['createdAt', 'ASC'],
+              ],
+        })
+        const normalToks = await Ticket.findAll({
+            where: {stage:stage,status:"waiting",disabled: false,createdAt: {[Op.gte]: twelveHoursAgo}},
+            limit: 5,
+            order: [['createdAt', 'ASC']],
+        })
+        const disabledIds = disabledToks.map(ticket => ticket.id);
+        const normalIds = normalToks.map(ticket => ticket.id);
+        const otherToks = await Ticket.findAll({
+            where: {
+                stage: stage,
+                status: "waiting",
+                createdAt: {[Op.gte]: twelveHoursAgo},
+                id: {
+                    [Op.notIn]: [...disabledIds, ...normalIds],
+                },
+            },
+            limit: 9 - (normalToks.length+disabledToks.length),
+            order: [['createdAt', 'ASC']],
+        });
+        const curr = [...disabledToks,...normalToks, ...otherToks]
             const counters = await Counter.findAll();
-            const result = tickets.map(ticket => {
+            const result = curr.map(ticket => {
                 const counter = counters.find(item => item.service === ticket.stage)
                 return {
                     ticket: ticket,
@@ -186,7 +205,6 @@ router.get('/getMedsTickets', async (req, res, next) => {
             })
             const disabledIds = disabledToks.rows.map(ticket => ticket.id);
             const normalIds = normalToks.rows.map(ticket => ticket.id);
-            console.log('other toks length ',normalToks.rows.length+disabledToks.rows.length)
             const otherToks = await Ticket.findAndCountAll({
                 where: {
                     stage: stage,
