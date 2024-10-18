@@ -103,6 +103,30 @@ router.get('/next_stage', async (req, res, next) => {
     }
 });
 // get all queues
+router.post('/clinic_go', async (req, res, next) => {
+    const { mr_number, stage } = req.body
+    console.log('finishing data ',req.body)
+    if(mr_number.trim() === ""){
+        return res.status(400).json({ error: 'Mr Number is required' });
+    }else{
+        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${mr_number}`).then((data)=> {
+            if(data.data.status === 201){
+                return res.status(400).json({ error: data.data.data.consStatus });
+            }else{
+                res.json(data.data.data)
+            }
+            // if (Array.isArray(data.data.data)) {
+            //     res.json(data.data.data)
+            //     //console.log('User data retrieved successfully:', data.data.data);
+            //   } else {
+            //     return res.status(400).json({ error: data.data.data });
+            //   }
+        }).catch((error)=> {
+            return res.status(400).json({ error: error });
+        })
+    }
+});
+// get all queues
 router.get('/getAllTickets', async (req, res, next) => {
     try {
         const queue = await Ticket.findAll({

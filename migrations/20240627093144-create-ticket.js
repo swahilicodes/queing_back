@@ -33,6 +33,22 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      clinic: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      clinic_code: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      gender: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      consult_doctor: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       disability: {
         type: Sequelize.STRING,
         defaultValue: null

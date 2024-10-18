@@ -11,6 +11,7 @@ const user = require('./data/users')
 const advert = require('./data/adverts')
 const doctor = require('./data/doctors')
 const nurse = require('./data/nurse')
+const suggestion = require('./data/suggestions')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -40,6 +41,7 @@ app.use('/admins',admins)
 app.use('/adverts',advert)
 app.use('/doctors',doctor)
 app.use('/nurse',nurse)
+app.use('/suggestion',suggestion)
 
 cron.schedule('0 0 * * *', async () => {
   try {
