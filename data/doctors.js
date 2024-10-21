@@ -17,7 +17,7 @@ router.post('/create_doctor', async (req, res) => {
             return res.status(400).json({ error: 'phone is required' });
         }else if(service.trim() === ''){
             return res.status(400).json({ error: 'service is required' });
-        }else if(service.trim() ==="clinic" && clinic.trim()===""){
+        }else if(service.trim() ==="nurse_station" && clinic.trim()===""){
             return res.status(400).json({ error: 'clinic is required' });
         }else if(room.trim() === ''){
             return res.status(400).json({ error: 'room is required' });
@@ -29,7 +29,7 @@ router.post('/create_doctor', async (req, res) => {
                 where: {phone}
             })
             if(att){
-                return res.status(400).json({ error: 'Doctor exists' });  
+                return res.status(400).json({ error: 'Attendant exists' });  
             }else if(user){
                 return res.status(400).json({ error: 'user exists' }); 
             }else{
@@ -39,14 +39,14 @@ router.post('/create_doctor', async (req, res) => {
                     service,
                     room,
                     clinic: service !== "clinic"?null:clinic,
-                    role: service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"doctor",
+                    role: service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"nurse",
                     password: newPass
                 })
                 await User.create({
                     name,
                     phone,
                     clinic: service !== "clinic"?null:clinic,
-                    role:service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"doctor",
+                    role:service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"nurse",
                     password:newPass,
                     service,
                     counter: room

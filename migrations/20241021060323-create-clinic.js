@@ -2,26 +2,26 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('counters', {
+    await queryInterface.createTable('clinics', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      namba: {
+      cliniciname: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      service: {
+      clinicicode: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      clinic: {
+      status: {
         type: Sequelize.STRING,
         allowNull: true
       },
-      code: {
+      deptcode: {
         type: Sequelize.STRING,
         allowNull: true
       },
@@ -36,6 +36,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('counters');
+    await queryInterface.dropTable('clinics');
   }
 };

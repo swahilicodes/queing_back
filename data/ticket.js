@@ -105,22 +105,27 @@ router.get('/next_stage', async (req, res, next) => {
 // get all queues
 router.post('/clinic_go', async (req, res, next) => {
     const { mr_number, stage } = req.body
-    console.log('finishing data ',req.body)
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
     }else{
-        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${mr_number}`).then((data)=> {
+        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${mr_number}`).then(async (data)=> {
             if(data.data.status === 201){
                 return res.status(400).json({ error: data.data.data.consStatus });
             }else{
-                res.json(data.data.data)
+                const ticket = await Ticket.findOne({
+                    where: {mr_no: mr_number}
+                })
+                if(ticket){
+                  const data002 =  await ticket.update({
+                    clinic_code: data.data.data.clinicCode,
+                    stage: stage
+                    })
+                    res.json(data002)
+                }else{
+                    return res.status(400).json({ error: "patient not found" });
+                }
+                // res.json(data.data.data)
             }
-            // if (Array.isArray(data.data.data)) {
-            //     res.json(data.data.data)
-            //     //console.log('User data retrieved successfully:', data.data.data);
-            //   } else {
-            //     return res.status(400).json({ error: data.data.data });
-            //   }
         }).catch((error)=> {
             return res.status(400).json({ error: error });
         })
@@ -312,6 +317,158 @@ router.get('/getMedsTickets', async (req, res, next) => {
         }
     }
 });
+// get waiting
+router.get('/getClinicTickets', async (req, res, next) => {
+    const status = req.query.status
+    const mr_no = req.query.phone
+    const stage = req.query.stage
+    const clinic_code = req.query.clinic_code
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    console.log('clinic code is ',clinic_code)
+    try{
+        if(mr_no.trim() !== ''){
+            const tickets = await Ticket.findAll({
+                where: {stage,clinic_code: clinic_code,status,mr_no: {[Op.like]:`%${mr_no}%`}}
+            })
+            const counters = await Counter.findAll()
+            const result = tickets.map(cu => {
+                const counter = counters.find(item => item.service === cu.stage)
+                return {
+                    token: cu,
+                    counter: counter
+                }
+            })
+            res.json({
+                data: result,
+                totalItems: tickets.count,
+                totalPages: Math.ceil(tickets.count / pageSize),
+            })
+        }else{
+            const tickets = await Ticket.findAll({
+                where: {stage,clinic_code: clinic_code,status}
+            })
+            const counters = await Counter.findAll()
+            const result = tickets.map(cu => {
+                const counter = counters.find(item => item.service === cu.stage)
+                return {
+                    token: cu,
+                    counter: counter
+                }
+            })
+            res.json({
+                data: result,
+                totalItems: tickets.count,
+                totalPages: Math.ceil(tickets.count / pageSize),
+            })
+        }
+    }catch(error){
+        res.status(500).json({ error: error });
+    }
+    // if(phone.trim() !== ''){ 
+    //     try {
+    //         const disabledToks = await Ticket.findAndCountAll({
+    //             where: {stage:stage,status:status,disabled: true,phone: {[Op.like]:`%${phone}%`},createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
+    //             offset: offset,
+    //             limit: 3,
+    //             order: [
+    //                 // ['disabled', 'DESC'],
+    //                 ['createdAt', 'ASC'],
+    //               ],
+    //         })
+    //         const normalToks = await Ticket.findAndCountAll({
+    //             where: {stage:stage,status:status,disabled: false,phone: {[Op.like]:`%${phone}%`},createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
+    //             offset: offset,
+    //             limit: 5,
+    //             order: [['createdAt', 'ASC']],
+    //         })
+    //         const disabledIds = disabledToks.rows.map(ticket => ticket.id);
+    //         const normalIds = normalToks.rows.map(ticket => ticket.id);
+    //         const otherToks = await Ticket.findAndCountAll({
+    //             where: {
+    //                 stage: stage,
+    //                 status: status,
+    //                 phone: {[Op.like]:`%${phone}%`},
+    //                 createdAt: {[Op.gte]: twelveHoursAgo},
+    //                 id: {
+    //                     [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
+    //                 },
+    //             },
+    //             offset: offset,
+    //             limit: 10 - (normalToks.rows.length+disabledToks.rows.length),
+    //             order: [['createdAt', 'ASC']],
+    //         });
+    //         const curr = [...disabledToks.rows,...normalToks.rows, ...otherToks.rows]
+    //         const counters = await Counter.findAll()
+    //         const result = curr.map(cu => {
+    //             const counter = counters.find(item => item.service === cu.stage)
+    //             return {
+    //                 token: cu,
+    //                 counter: counter
+    //             }
+    //         })
+    //         res.json({
+    //             data: result,
+    //             totalItems: curr.count,
+    //             totalPages: Math.ceil(curr.count / pageSize),
+    //         })
+    //     } catch (err) {
+    //         res.status(500).json({ error: err });
+    //     } 
+    // }else{
+    //     try {
+    //         const disabledToks = await Ticket.findAndCountAll({
+    //             where: {stage:stage,status:status,disabled: true,createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
+    //             offset: offset,
+    //             limit: 3,
+    //             order: [
+    //                 // ['disabled', 'DESC'],
+    //                 ['createdAt', 'ASC'],
+    //               ],
+    //         })
+    //         const normalToks = await Ticket.findAndCountAll({
+    //             where: {stage:stage,status:status,disabled: false,createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
+    //             offset: offset,
+    //             limit: 5,
+    //             order: [['createdAt', 'ASC']],
+    //         })
+    //         const disabledIds = disabledToks.rows.map(ticket => ticket.id);
+    //         const normalIds = normalToks.rows.map(ticket => ticket.id);
+    //         console.log('other toks length ',normalToks.rows.length+disabledToks.rows.length)
+    //         const otherToks = await Ticket.findAndCountAll({
+    //             where: {
+    //                 stage: stage,
+    //                 status: status,
+    //                 createdAt: {[Op.gte]: twelveHoursAgo},
+    //                 id: {
+    //                     [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
+    //                 },
+    //             },
+    //             offset: offset,
+    //             limit: 10 - (normalToks.rows.length+disabledToks.rows.length),
+    //             order: [['createdAt', 'ASC']],
+    //         });
+    //         const curr = [...disabledToks.rows,...normalToks.rows, ...otherToks.rows]
+    //         const counters = await Counter.findAll()
+    //         const result = curr.map(cu => {
+    //             const counter = counters.find(item => item.service === cu.stage)
+    //             return {
+    //                 token: cu,
+    //                 counter: counter
+    //             }
+    //         })
+    //         res.json({
+    //             data: result,
+    //             totalItems: curr.count,
+    //             totalPages: Math.ceil(curr.count / pageSize),
+    //         })
+    //     } catch (err) {
+    //         res.status(500).json({ error: err });
+    //     }
+    // }
+});
 // get queues counter
 router.get('/getTicketTotal', async (req, res, next) => {
     const status = req.query.status
@@ -437,7 +594,7 @@ const id = req.params.id
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id
-const {stage, mr_number, penalized} = req.body
+const {stage, mr_number, penalized, sex} = req.body
 console.log('mr number ',mr_number,penalized)
     try {
         const ticket = await Ticket.findOne({
@@ -450,14 +607,22 @@ console.log('mr number ',mr_number,penalized)
         }else if(stage.trim()===""){
             return res.status(400).json({ error: 'stage is required' }); 
         }else {
-            ticket.update({
-                status: "waiting",
-                stage: stage,
-                mr_no: mr_number,
-                disabled: penalized?false: ticket.disabled,
-                disability: penalized?"": ticket.disability,
+            const tiki = await Ticket.findOne({
+                where: {mr_no: mr_number}
             })
-            res.json(ticket)
+            if(tiki){
+                return res.status(400).json({ error: `${mr_number} exists in ${stage}` }); 
+            }else{
+                ticket.update({
+                    status: "waiting",
+                    stage: stage,
+                    gender: sex,
+                    mr_no: mr_number,
+                    disabled: penalized?false: ticket.disabled,
+                    disability: penalized?"": ticket.disability,
+                })
+                res.json(ticket)
+            }
         }
     } catch (err) {
         res.status(500).json({ error: err });

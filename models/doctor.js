@@ -30,18 +30,13 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
-    room: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    occupied: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false
-    },
-    current_patient: {
+    clinic_code: {
       type: DataTypes.STRING,
       allowNull: true
+    },
+    counter: {
+      type: DataTypes.STRING,
+      allowNull: false
     },
     password: {
       type: DataTypes.STRING,
@@ -50,12 +45,10 @@ module.exports = (sequelize, DataTypes) => {
     role: {
       type: DataTypes.STRING,
       allowNull: false,
-      default: "doctor"
     },
     display_photo: {
       type: DataTypes.STRING,
       allowNull: true,
-      default: "doctor"
     },
   }, {
     sequelize,

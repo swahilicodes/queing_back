@@ -25,18 +25,13 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
-      room: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      occupied: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
-        allowNull: false
-      },
-      current_patient: {
+      clinic_code: {
         type: Sequelize.STRING,
         allowNull: true
+      },
+      counter: {
+        type: Sequelize.STRING,
+        allowNull: false
       },
       password: {
         type: Sequelize.STRING,
@@ -45,12 +40,10 @@ module.exports = {
       role: {
         type: Sequelize.STRING,
         allowNull: false,
-        default: "doctor"
       },
       display_photo: {
         type: Sequelize.STRING,
         allowNull: true,
-        default: "doctor"
       },
       createdAt: {
         allowNull: false,

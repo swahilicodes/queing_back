@@ -5,17 +5,16 @@ const { Op } = require('sequelize')
 
 
 router.post('/create_counter', async (req, res) => {
-    const { service, namba, sub_service} = req.body;
+    const { service, namba, clinic, code} = req.body;
     try {
         if(service.trim() === ''){
             return res.status(400).json({ error: 'service is required' });
         }else if(namba.trim() === ''){
             return res.status(400).json({ error: 'number is required' });
-        }else if(service === "clinic" && sub_service.trim()===''){
+        }else if(service === "nurse_station" && clinic.trim()===''){
             return res.status(400).json({ error: 'clinic is required' });
         }else{
             const services = await Counter.findAll()
-            console.log('counters are ')
             
             if(services.length > 0){
                 console.log('table has data')
@@ -29,18 +28,19 @@ router.post('/create_counter', async (req, res) => {
                         {
                             service,
                             namba,
-                            subservice: sub_service
+                            clinic,
+                            code
                         }
                     )
                     res.json(newService);
                 }  
             }else{
-                console.log('table does not exist')
                 const newService = await Counter.create(
                     {
                         service,
                         namba,
-                        subservice: sub_service
+                        clinic,
+                        code
                     }
                 )
                 res.json(newService);
