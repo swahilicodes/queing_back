@@ -1,57 +1,57 @@
 const express = require('express');
-const { Doctor, User, Counter, Patient } = require('../models/index')
+const { Dokta, User, Counter, Patient } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
 
 
-router.post('/create_doctor', async (req, res) => {
-    const { name, phone, service,room, clinic, clinic_code } = req.body;
+router.post('/create_dokta', async (req, res) => {
+    const { name, phone,room, clinic, clinic_code } = req.body;
     let newPass = await bcrypt.hash(phone,6)
-    let role
     console.log('clinic is ',clinic)
     try {
         if(name.trim() === ''){
             return res.status(400).json({ error: 'name is required' });
         }else if(phone.trim() === ''){
             return res.status(400).json({ error: 'phone is required' });
-        }else if(service.trim() === ''){
-            return res.status(400).json({ error: 'service is required' });
-        }else if(service.trim() ==="nurse_station" && clinic.trim()===""){
+        }else if(clinic.trim() ===""){
             return res.status(400).json({ error: 'clinic is required' });
+        }else if(clinic_code.trim() ===""){
+            return res.status(400).json({ error: 'clinic code is required' });
         }else if(room.trim() === ''){
             return res.status(400).json({ error: 'room is required' });
         }else{
-            const att = await Doctor.findOne({
+            const att = await Dokta.findOne({
                 where: {phone}
             })
             const user = await User.findOne({
                 where: {phone}
             })
-            if(att){
-                return res.status(400).json({ error: 'Attendant exists' });  
+            if(att !== null){
+                return res.status(400).json({ error: 'Doctor exists' });  
             }else if(user){
                 return res.status(400).json({ error: 'user exists' }); 
             }else{
-                const newAtt = await Doctor.create({
+                const newAtt = await Dokta.create({
                     name,
                     phone,
-                    service,
-                    counter: room,
+                    service: "clinic",
+                    room,
                     clinic_code,
-                    clinic: service !== "nurse_station"?null:clinic,
-                    role: service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"nurse",
+                    clinic,
+                    role: "doctor",
                     password: newPass
                 })
                 await User.create({
                     name,
                     phone,
-                    clinic_code,
-                    clinic: service !== "nurse_station"?null:clinic,
-                    role:service==="meds"?"medical_recorder":service==="accounts"?"accountant":service==="payment"?"cashier":"nurse",
+                    counter:room,
+                    clinic,
+                    role: "doctor",
                     password:newPass,
-                    service,
-                    counter: room
+                    service: "clinic",
+                    counter:room,
+                    display_photo: null
                 })
                 res.json(newAtt)
             }
@@ -61,12 +61,14 @@ router.post('/create_doctor', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
-router.get('/get_doctors', async (req, res) => {
+router.get('/get_doktas', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
+    const clinic_code = req.query.clinic_code;
     const offset = (page - 1) * pageSize;
     try {
-        const curr = await Doctor.findAndCountAll({
+        const curr = await Dokta.findAndCountAll({
+            where: {clinic_code},
             offset: offset,
             limit: pageSize,
             order: [['id', 'ASC']]
@@ -90,10 +92,10 @@ router.get('/get_all_doctors', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
-router.put('/delete_doctor/:id', async (req, res) => {
+router.put('/delete_dokta/:id', async (req, res) => {
     const id = req.params.id
     try {
-        const service = await Doctor.findByPk(id);
+        const service = await Dokta.findByPk(id);
         if (!service) {
         return res.status(404).json({ error: 'doctor not found' });
         }else{
