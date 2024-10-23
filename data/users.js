@@ -1,5 +1,5 @@
 const express = require('express');
-const { User } = require('../models/index')
+const { User, Dokta, Doctor, Admin } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
@@ -46,7 +46,19 @@ router.get('/get_user', async (req, res) => {
             if(!user){
                 return res.status(400).json({ error: 'user not found' });
             }else{
-                res.json(user)
+                if(user.role==="medical_recorder" || user.role === "accountant" || user.role === "nurse"){
+                    const usa = await Doctor.findOne({
+                        where: {phone: user.phone}
+                    })
+                    res.json(usa)
+                }else if(user.role==="doctor"){
+                    const usa = await Dokta.findOne({
+                        where: {phone: user.phone}
+                    })
+                    res.json(usa)
+                }else {
+                    res.json(user)
+                }
             }
         }
     } catch (err) {

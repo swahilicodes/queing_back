@@ -47,13 +47,6 @@ router.post('/create_admin', async (req, res) => {
                     service,
                     counter
                 })
-                io.on("connection",(socket)=> {
-                    console.log('emitting diode please wait...')
-                    io.emit('data',newAtt)
-                    // socket.on("disconnect", ()=> {
-                    //   console.log("websocket disconnected")
-                    // })
-                  })
                 res.json(newAtt)
             }
         }

@@ -1,5 +1,5 @@
 const express = require('express');
-const { Ticket, Attendant, Counter } = require('../models/index')
+const { Ticket, Attendant, Counter, Dokta } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const axios = require('axios')
@@ -667,6 +667,57 @@ console.log('billing type ',bill)
                 })
                 res.json(ticket)
             }
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// penalize
+router.post('/send_to_clinic', async (req, res, next) => {
+const { doctor_id, patient_id } = req.body
+    try {
+        if(doctor_id.trim()===""){
+            return res.status(400).json({ error: 'doctor id is empty' }); 
+        }else if(patient_id.trim()===""){
+            return res.status(400).json({ error: 'patient id is empty' }); 
+        }else{
+            const ticket = await Ticket.findOne({
+                where: { mr_no: patient_id }
+            })
+            const dokta = await Dokta.findOne({
+                where: { phone: doctor_id }
+            })
+            if(!ticket){
+                return res.status(400).json({ error: 'ticket not found' });
+            }else if(!dokta) {
+                return res.status(400).json({ error: 'doctor not found' });
+            }else {
+                console.log(ticket,dokta)
+                ticket.update({
+                    stage: "clinic"
+                })
+                dokta.update({
+                    current_patient: patient_id
+                })
+                res.json(dokta)
+            }
+        }
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
+// get clinic patient
+router.get('/clinic_patient', async (req, res, next) => {
+const { clinic_code } = req.query
+console.log('clinic code ', clinic_code)
+    try {
+        if(clinic_code.trim()===""){
+            return res.status(400).json({ error: 'clinic code is empty' }); 
+        }else{
+            const ticket = await Ticket.findOne({
+                where: { clinic_code: clinic_code, stage: "clinic" }
+            })
+            res.json(ticket)
         }
     } catch (err) {
         res.status(500).json({ error: err });

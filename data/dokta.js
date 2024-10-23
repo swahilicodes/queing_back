@@ -83,6 +83,28 @@ router.get('/get_doktas', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+router.get('/get_free_doktas', async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const clinic_code = req.query.clinic_code;
+    const offset = (page - 1) * pageSize;
+    try {
+        const curr = await Dokta.findAndCountAll({
+            where: {clinic_code,current_patient: {[Op.eq]: null}},
+            offset: offset,
+            limit: pageSize,
+            order: [['id', 'ASC']]
+        })
+        res.json({
+            data: curr.rows,
+            totalItems: curr.count,
+            totalPages: Math.ceil(curr.count / pageSize),
+          });
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
 router.get('/get_all_doctors', async (req, res) => {
     try {
         const curr = await Doctor.findAll()
