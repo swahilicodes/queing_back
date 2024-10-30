@@ -99,7 +99,6 @@ router.put('/edit_user/:id', async (req, res) => {
 router.put('/edit_user_roles/:id', async (req, res) => {
     const id = req.params.id
     const {counter} = req.body
-    console.log('editing please wait',id,counter)
     try {
         if(counter.trim()==="" || counter === undefined){
             return res.status(400).json({ error: 'counter is empty' }); 

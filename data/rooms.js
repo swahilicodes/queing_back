@@ -6,7 +6,6 @@ const { Op } = require('sequelize')
 
 router.post('/create_room', async (req, res) => {
     const { namba, clinic, clinic_code} = req.body;
-    console.log('room data ',req.body)
     try {
         if(namba.trim() === ''){
             return res.status(400).json({ error: 'room number is required' });
@@ -53,7 +52,6 @@ router.get('/get_rooms', async (req, res) => {
     const clinic_code = req.query.clinic_code
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    console.log('clinic code is ',clinic_code)
     try {
         const curr = await Room.findAndCountAll({
             where: {clinic_code: clinic_code},
@@ -97,7 +95,6 @@ router.put('/delete_counter/:id', async (req, res) => {
 router.put('/edit_counter/:id', async (req, res) => {
     const id = req.params.id
     const newData = req.body
-    console.log(newData)
     try {
         if(newData.service.trim()===""){
             return res.status(404).json({ error: 'service is empty' }); 

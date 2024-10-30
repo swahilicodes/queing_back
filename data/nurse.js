@@ -45,13 +45,6 @@ router.post('/create_nurse', async (req, res) => {
                     service,
                     room
                 })
-                io.on("connection",(socket)=> {
-                    console.log('emitting diode please wait...')
-                    io.emit('data',newAtt)
-                    // socket.on("disconnect", ()=> {
-                    //   console.log("websocket disconnected")
-                    // })
-                  })
                 res.json(newAtt)
             }
         }
@@ -106,7 +99,6 @@ router.put('/delete_nurse/:id', async (req, res) => {
 router.put('/edit_counter/:id', async (req, res) => {
     const id = req.params.id
     const newData = req.body
-    console.log(newData)
     try {
         if(newData.name.trim()===""){
             return res.status(404).json({ error: 'name is empty' }); 

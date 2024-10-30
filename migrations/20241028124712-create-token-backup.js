@@ -2,7 +2,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('tickets', {
+    await queryInterface.createTable('tokenbackups', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -12,7 +12,6 @@ module.exports = {
       status: {
         type: Sequelize.STRING,
         allowNull: false,
-        default:"waiting"
       },
       dateTime: {
         type: Sequelize.DATE,
@@ -26,8 +25,7 @@ module.exports = {
       },
       stage: {
         type: Sequelize.STRING,
-        defaultValue: "meds"
-        // allowNull: false,
+        allowNull: false,
       },
       mr_no: {
         type: Sequelize.STRING,
@@ -93,14 +91,14 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      paid: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
-      },
-      paid: {
-        allowNull: false,
-        type: Sequelize.BOOLEAN,
-        defaultValue: false
       },
       updatedAt: {
         allowNull: false,
@@ -109,6 +107,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('tickets');
+    await queryInterface.dropTable('tokenbackups');
   }
 };

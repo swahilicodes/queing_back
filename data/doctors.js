@@ -9,7 +9,6 @@ router.post('/create_doctor', async (req, res) => {
     const { name, phone, service,room, clinic, clinic_code } = req.body;
     let newPass = await bcrypt.hash(phone,6)
     let role
-    console.log('clinic is ',clinic)
     try {
         if(name.trim() === ''){
             return res.status(400).json({ error: 'name is required' });
@@ -114,7 +113,6 @@ router.put('/delete_doctor/:id', async (req, res) => {
 router.put('/edit_counter/:id', async (req, res) => {
     const id = req.params.id
     const newData = req.body
-    console.log(newData)
     try {
         if(newData.name.trim()===""){
             return res.status(404).json({ error: 'name is empty' }); 
@@ -222,7 +220,6 @@ router.get('/doctor_patient', async (req, res) => {
 // get doctor patient
 router.get('/finish_doctor_patient', async (req, res) => {
     const {phone} = req.query
-    console.log('phone is ',phone)
     try{
         if(!phone){
             return res.status(400).json({ error: 'phone is required' });

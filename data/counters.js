@@ -17,7 +17,6 @@ router.post('/create_counter', async (req, res) => {
             const services = await Counter.findAll()
             
             if(services.length > 0){
-                console.log('table has data')
                 const service01 = await Counter.findOne({
                     where: {service:service,namba:namba}
                 })
@@ -97,7 +96,6 @@ router.put('/delete_counter/:id', async (req, res) => {
 router.put('/edit_counter/:id', async (req, res) => {
     const id = req.params.id
     const newData = req.body
-    console.log(newData)
     try {
         if(newData.service.trim()===""){
             return res.status(404).json({ error: 'service is empty' }); 

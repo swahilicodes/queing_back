@@ -1,5 +1,5 @@
 const express = require('express');
-const { Dokta, User, Counter, Patient, Ticket } = require('../models/index')
+const { Dokta, User, Counter, Patient, Ticket, TokenBackup } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
@@ -8,7 +8,6 @@ const bcrypt = require("bcryptjs")
 router.post('/create_dokta', async (req, res) => {
     const { name, phone,room, clinic, clinic_code } = req.body;
     let newPass = await bcrypt.hash(phone,6)
-    console.log('clinic is ',clinic)
     try {
         if(name.trim() === ''){
             return res.status(400).json({ error: 'name is required' });
@@ -143,11 +142,20 @@ router.post('/finish_patient', async (req, res) => {
         }else{
             tic.update({
                 stage: "out",
+                doctor_id: doctor_id,
+                clinic_time: new Date()
             })
             doc.update({
                 current_patient: null
             })
-            res.json(doc)
+            const toke = await Ticket.findByPk(tic.id)
+            if(toke){
+                const { id, ...tokenFields } = toke.toJSON();
+                const backup = await TokenBackup.create(tokenFields)
+                res.json(backup)
+            }else{
+                return res.status(404).json({ error: 'token not found' });
+            }
         }
     } catch (err) {
         //next({error: err})

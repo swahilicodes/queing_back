@@ -8,7 +8,6 @@ const { default: axios } = require('axios');
 
 router.post('/create_clinic', async (req, res) => {
     const { cliniciname,clinicicode, status, deptcode } = req.body;
-    console.log(clinicicode,cliniciname)
     try {
         if(cliniciname.trim() === ''){
             return res.status(400).json({ error: 'clinic name is required' });

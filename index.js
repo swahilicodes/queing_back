@@ -1,7 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const patient = require('./data/patient')
 const queue = require('./data/queue')
 const ticket = require('./data/ticket')
 const service = require('./data/services')
@@ -15,6 +14,7 @@ const suggestion = require('./data/suggestions')
 const clinics = require('./data/clinic')
 const doktas = require('./data/dokta')
 const rooms = require('./data/rooms')
+const networks = require('./data/network')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -34,7 +34,6 @@ app.use(cors(corsOptions));
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/patients',patient)
 app.use('/queues',queue)
 app.use('/tickets',ticket)
 app.use('/services',service)
@@ -48,6 +47,9 @@ app.use('/suggestion',suggestion)
 app.use('/clinic',clinics)
 app.use('/doktas',doktas)
 app.use('/rooms',rooms)
+app.use('/network',networks)
+
+
 
 cron.schedule('0 0 * * *', async () => {
   try {

@@ -6,6 +6,7 @@
     "host": "192.168.30.245",
     "port": "3306",
     "dialect": "mysql",
+    "logging": false,
     "pool": {
       "max": 10,
       "min": 0,
@@ -21,13 +22,15 @@
     "password": null,
     "database": "queing",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "logging": false
   },
   "production": {
     "username": "root",
     "password": null,
     "database": "database_production",
     "host": "127.0.0.1",
-    "dialect": "mysql"
+    "dialect": "mysql",
+    "logging": false
   }
 }

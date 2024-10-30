@@ -8,7 +8,6 @@ const axios = require('axios')
 router.post('/create_ticket', async (req, res) => {
     const { phone,disability} = req.body;
     let ticket_no
-    console.log('creating in the server ',req.body)
     try {
         if(phone.trim() === ''){
             return res.status(400).json({ error: 'phone is required' });
@@ -40,48 +39,98 @@ router.post('/create_ticket', async (req, res) => {
 
 // get queues
 router.get('/get_display_tokens', async (req, res, next) => {
-    const {stage} = req.query
+    const {stage, clinic_code} = req.query
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-    try {
-        const disabledToks = await Ticket.findAll({
-            where: {stage:stage,status:"waiting",disabled: true,createdAt: {[Op.gte]: twelveHoursAgo}},
-            limit: 3,
-            order: [
-                // ['disabled', 'DESC'],
-                ['createdAt', 'ASC'],
-              ],
-        })
-        const normalToks = await Ticket.findAll({
-            where: {stage:stage,status:"waiting",disabled: false,createdAt: {[Op.gte]: twelveHoursAgo}},
-            limit: 5,
-            order: [['createdAt', 'ASC']],
-        })
-        const disabledIds = disabledToks.map(ticket => ticket.id);
-        const normalIds = normalToks.map(ticket => ticket.id);
-        const otherToks = await Ticket.findAll({
-            where: {
-                stage: stage,
-                status: "waiting",
-                createdAt: {[Op.gte]: twelveHoursAgo},
-                id: {
-                    [Op.notIn]: [...disabledIds, ...normalIds],
-                },
-            },
-            limit: 9 - (normalToks.length+disabledToks.length),
-            order: [['createdAt', 'ASC']],
-        });
-        const curr = [...disabledToks,...normalToks, ...otherToks]
-            const counters = await Counter.findAll();
-            const result = curr.map(ticket => {
-                const counter = counters.find(item => item.service === ticket.stage)
-                return {
-                    ticket: ticket,
-                    counter: counter
-                };
-            });
-            res.json(result);
-    } catch (err) {
-        res.status(500).json({ error: err });
+    if(stage.trim() === ""){
+        return res.status(400).json({ error: 'stage is required is required' }); 
+    }else if(stage==="nurse_station" && !clinic_code){
+        return res.status(400).json({ error: 'clinic code is required is required' });
+    }else{
+        if(clinic_code){
+            try {
+                const disabledToks = await Ticket.findAll({
+                    where: {stage:stage,status:"waiting",disabled: true,createdAt: {[Op.gte]: twelveHoursAgo},clinic_code: clinic_code},
+                    limit: 3,
+                    order: [
+                        // ['disabled', 'DESC'],
+                        ['createdAt', 'ASC'],
+                      ],
+                })
+                const normalToks = await Ticket.findAll({
+                    where: {stage:stage,status:"waiting",disabled: false,createdAt: {[Op.gte]: twelveHoursAgo},clinic_code: clinic_code},
+                    limit: 5,
+                    order: [['createdAt', 'ASC']],
+                })
+                const disabledIds = disabledToks.map(ticket => ticket.id);
+                const normalIds = normalToks.map(ticket => ticket.id);
+                const otherToks = await Ticket.findAll({
+                    where: {
+                        stage: stage,
+                        status: "waiting",
+                        createdAt: {[Op.gte]: twelveHoursAgo},
+                        id: {
+                            [Op.notIn]: [...disabledIds, ...normalIds],
+                        },
+                    },
+                    limit: 9 - (normalToks.length+disabledToks.length),
+                    order: [['createdAt', 'ASC']],
+                });
+                const curr = [...disabledToks,...normalToks, ...otherToks]
+                    const counters = await Counter.findAll();
+                    const result = curr.map(ticket => {
+                        const counter = counters.find(item => item.service === ticket.stage)
+                        return {
+                            ticket: ticket,
+                            counter: counter
+                        };
+                    });
+                    res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }else{
+            try {
+                const disabledToks = await Ticket.findAll({
+                    where: {stage:stage,status:"waiting",disabled: true,createdAt: {[Op.gte]: twelveHoursAgo}},
+                    limit: 3,
+                    order: [
+                        // ['disabled', 'DESC'],
+                        ['createdAt', 'ASC'],
+                      ],
+                })
+                const normalToks = await Ticket.findAll({
+                    where: {stage:stage,status:"waiting",disabled: false,createdAt: {[Op.gte]: twelveHoursAgo}},
+                    limit: 5,
+                    order: [['createdAt', 'ASC']],
+                })
+                const disabledIds = disabledToks.map(ticket => ticket.id);
+                const normalIds = normalToks.map(ticket => ticket.id);
+                const otherToks = await Ticket.findAll({
+                    where: {
+                        stage: stage,
+                        status: "waiting",
+                        createdAt: {[Op.gte]: twelveHoursAgo},
+                        id: {
+                            [Op.notIn]: [...disabledIds, ...normalIds],
+                        },
+                    },
+                    limit: 9 - (normalToks.length+disabledToks.length),
+                    order: [['createdAt', 'ASC']],
+                });
+                const curr = [...disabledToks,...normalToks, ...otherToks]
+                    const counters = await Counter.findAll();
+                    const result = curr.map(ticket => {
+                        const counter = counters.find(item => item.service === ticket.stage)
+                        return {
+                            ticket: ticket,
+                            counter: counter
+                        };
+                    });
+                    res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }
     }
 });
 // get all queues
@@ -93,7 +142,6 @@ router.get('/next_stage', async (req, res, next) => {
         axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/patient/${mr_number}`).then((data)=> {
             if (Array.isArray(data.data.data)) {
                 res.json(data.data.data)
-                //console.log('User data retrieved successfully:', data.data.data);
               } else {
                 return res.status(400).json({ error: data.data.data });
               }
@@ -104,7 +152,7 @@ router.get('/next_stage', async (req, res, next) => {
 });
 // get all queues
 router.post('/clinic_go', async (req, res, next) => {
-    const { mr_number, stage } = req.body
+    const { mr_number, stage, cashier_id } = req.body
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
     }else{
@@ -118,7 +166,9 @@ router.post('/clinic_go', async (req, res, next) => {
                 if(ticket){
                   const data002 =  await ticket.update({
                     clinic_code: data.data.data.clinicCode,
-                    stage: stage
+                    stage: stage,
+                    account_time: new Date(),
+                    cashier_id: cashier_id
                     })
                     res.json(data002)
                 }else{
@@ -149,7 +199,6 @@ router.get('/getCatTickets', async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    console.log("status is ",status,category)
     try {
         if(status.trim()===""){
             const curr = await Ticket.findAndCountAll({
@@ -284,7 +333,6 @@ router.get('/getMedsTickets', async (req, res, next) => {
             })
             const disabledIds = disabledToks.rows.map(ticket => ticket.id);
             const normalIds = normalToks.rows.map(ticket => ticket.id);
-            console.log('other toks length ',normalToks.rows.length+disabledToks.rows.length)
             const otherToks = await Ticket.findAndCountAll({
                 where: {
                     stage: stage,
@@ -327,7 +375,6 @@ router.get('/getClinicTickets', async (req, res, next) => {
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-    console.log('clinic code is ',clinic_code)
     try{
         if(mr_no.trim() !== ''){
             const tickets = await Ticket.findAll({
@@ -436,7 +483,6 @@ router.get('/getClinicTickets', async (req, res, next) => {
     //         })
     //         const disabledIds = disabledToks.rows.map(ticket => ticket.id);
     //         const normalIds = normalToks.rows.map(ticket => ticket.id);
-    //         console.log('other toks length ',normalToks.rows.length+disabledToks.rows.length)
     //         const otherToks = await Ticket.findAndCountAll({
     //             where: {
     //                 stage: stage,
@@ -594,8 +640,7 @@ const id = req.params.id
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id
-const {stage, mr_number, penalized, sex} = req.body
-console.log('mr number ',mr_number,penalized)
+const {stage, mr_number, penalized, sex, recorder_id} = req.body
     try {
         const ticket = await Ticket.findOne({
             where: { id }
@@ -620,6 +665,8 @@ console.log('mr number ',mr_number,penalized)
                     mr_no: mr_number,
                     disabled: penalized?false: ticket.disabled,
                     disability: penalized?"": ticket.disability,
+                    med_time: new Date(),
+                    recorder_id: recorder_id
                 })
                 res.json(ticket)
             }
@@ -651,7 +698,6 @@ const id = req.params.id
 router.put('/bill/:id', async (req, res, next) => {
 const id = req.params.id
 const { bill } = req.body
-console.log('billing type ',bill)
     try {
         if(bill.trim()===""){
             return res.status(400).json({ error: 'billing type is empty' }); 
@@ -674,7 +720,7 @@ console.log('billing type ',bill)
 });
 // penalize
 router.post('/send_to_clinic', async (req, res, next) => {
-const { doctor_id, patient_id } = req.body
+const { doctor_id, patient_id, nurse_id } = req.body
     try {
         if(doctor_id.trim()===""){
             return res.status(400).json({ error: 'doctor id is empty' }); 
@@ -692,9 +738,10 @@ const { doctor_id, patient_id } = req.body
             }else if(!dokta) {
                 return res.status(400).json({ error: 'doctor not found' });
             }else {
-                console.log(ticket,dokta)
                 ticket.update({
-                    stage: "clinic"
+                    stage: "clinic",
+                    station_time: new Date(),
+                    nurse_id: nurse_id
                 })
                 dokta.update({
                     current_patient: patient_id
@@ -709,7 +756,6 @@ const { doctor_id, patient_id } = req.body
 // get clinic patient
 router.get('/clinic_patient', async (req, res, next) => {
 const { clinic_code } = req.query
-console.log('clinic code ', clinic_code)
     try {
         if(clinic_code.trim()===""){
             return res.status(400).json({ error: 'clinic code is empty' }); 

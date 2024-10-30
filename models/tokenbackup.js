@@ -3,7 +3,7 @@ const {
   Model
 } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Ticket extends Model {
+  class TokenBackup extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       // define association here
     }
   }
-  Ticket.init({
+  TokenBackup.init({
     ticket_no: {
       type: DataTypes.STRING(10),
       allowNull: false,
@@ -21,8 +21,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     stage: {
       type: DataTypes.STRING,
-      defaultValue: "meds"
-      // allowNull: false,
+      allowNull: false,
     },
     mr_no: {
       type: DataTypes.STRING,
@@ -60,7 +59,6 @@ module.exports = (sequelize, DataTypes) => {
     status: {
       type: DataTypes.STRING,
       allowNull: false,
-      default:"waiting"
     },
     phone: {
       type: DataTypes.STRING,
@@ -99,14 +97,14 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: true,
     },
     paid: {
-      allowNull: false,
       type: DataTypes.BOOLEAN,
+      allowNull: false,
       defaultValue: false
     },
   }, {
     sequelize,
-    modelName: 'Ticket',
-    tableName: 'tickets'
+    modelName: 'TokenBackup',
+    tableName: 'tokenbackups'
   });
-  return Ticket;
+  return TokenBackup;
 };
