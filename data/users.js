@@ -24,7 +24,15 @@ router.post('/login', async (req, res) => {
                 if(!correct){
                     return res.status(400).json({ error: 'password not correct' });
                 }else{
-                const token = jwt.sign({phone,correct},"swahili codes",{expiresIn: "1y"})
+                const token = jwt.sign({phone,role: user.role},"swahili codes",{expiresIn: "1y"})
+                // res.setHeader('Set-Cookie', cookie.serialize('auth', token, {
+                //     httpOnly: true,
+                //     secure: process.env.NODE_ENV === 'production',
+                //     maxAge: 3600,
+                //     path: '/',
+                //   }));
+                  
+                //   res.json({ message: 'Login successful' });
                 res.json(token);
                 }
             }
