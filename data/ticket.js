@@ -378,7 +378,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
     try{
         if(mr_no.trim() !== ''){
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: clinic_code,status,mr_no: {[Op.like]:`%${mr_no}%`}}
+                where: {stage,clinic_code: {[Op.in]: clinic_code},status,mr_no: {[Op.like]:`%${mr_no}%`}}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
