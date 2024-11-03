@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const { Op } = require("sequelize");
-const { Device } = require('../models/index')
+const { Device, AttendClinic } = require('../models/index')
 const os = require("os");
 const si = require("systeminformation");
 
@@ -48,7 +48,21 @@ router.get("/get_device_id", async (req, res) => {
                     deviceModel: deviceModel,
                     manufucturer: manufacturer 
                  })
-                 res.json(div)
+                 const clinics = await AttendClinic.findAll({
+                  where: {attendant_id: div.macAddress}
+              })
+                 res.json({
+                  id: div.id,
+                  macAddress: div.macAddress,
+                  manufucturer:div.manufucturer,
+                  deviceName: div.deviceName,
+                  deviceModel: div.deviceModel,
+                  default_page: div.default_page,
+                  role: div.role,
+                  createdAt: div.createdAt,
+                  updatedAt: div.updatedAt,
+                  clinics: clinics
+                 })
             }else{
               device.update({
                 macAddress: macAddress,
@@ -56,7 +70,22 @@ router.get("/get_device_id", async (req, res) => {
                 deviceModel: deviceModel,
                 manufucturer: manufacturer 
               })
-              res.json(device)
+              const clinics = await AttendClinic.findAll({
+                where: {attendant_id: device.macAddress}
+            })
+            console.log('device clinics are ',clinics)
+              res.json({
+                id: device.id,
+                macAddress: device.macAddress,
+                manufucturer:device.manufucturer,
+                deviceName: device.deviceName,
+                deviceModel: device.deviceModel,
+                default_page: device.default_page,
+                role: device.role,
+                createdAt: device.createdAt,
+                updatedAt: device.updatedAt,
+                clinics: clinics
+               })
             }
         }
       }catch(error) {
@@ -73,8 +102,24 @@ router.get("/get_devices", async (req, res) => {
           limit: pageSize,
           order: [['createdAt', 'ASC']]
       })
+      const clinics = await AttendClinic.findAll()
+      const result = curr.rows.map((item)=> {
+        const clinica = clinics.filter((id)=> id.attendant_id===item.macAddress)
+        return {
+          id: item.id,
+          macAddress: item.macAddress,
+          deviceName: item.deviceName,
+          deviceModel: item.deviceModel,
+          manufucturer: item.manufucturer,
+          default_page: item.default_page,
+          role: item.role,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt,
+          clinics: clinica
+        }
+      })
       res.json({
-          data: curr.rows,
+          data: result,
           totalItems: curr.count,
           totalPages: Math.ceil(curr.count / pageSize),
         });

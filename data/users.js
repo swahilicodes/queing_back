@@ -1,5 +1,5 @@
 const express = require('express');
-const { User, Dokta, Doctor, Admin } = require('../models/index')
+const { User, Dokta, Doctor, Admin, AttendClinic } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
@@ -58,12 +58,36 @@ router.get('/get_user', async (req, res) => {
                     const usa = await Doctor.findOne({
                         where: {phone: user.phone}
                     })
-                    res.json(usa)
+                    const clinics = await AttendClinic.findAll({
+                        attedant_id: usa.phone
+                    })
+                    res.json({
+                        id: usa.id,
+                        name: usa.name,
+                        role: usa.service,
+                        counter: usa.counter,
+                        phone: usa.phone,
+                        clinic: usa.clinic,
+                        clinic_code: usa.clinic_code,
+                        clinics: clinics,
+                        display_photo: usa.display_photo ===undefined?null:usa.display_photo
+                    })
                 }else if(user.role==="doctor"){
                     const usa = await Dokta.findOne({
                         where: {phone: user.phone}
                     })
-                    res.json(usa)
+                    res.json({
+                        id: usa.id,
+                        name: usa.name,
+                        role: usa.service,
+                        room: usa.counter,
+                        phone: usa.phone,
+                        clinic: usa.clinic,
+                        clinic_code: usa.clinic_code,
+                        clinics: clinics,
+                        current_patient: usa.current_patient,
+                        display_photo: usa.display_photo ===undefined?null:usa.display_photo
+                    })
                 }else {
                     res.json(user)
                 }

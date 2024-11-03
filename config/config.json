@@ -1,12 +1,11 @@
 {
   "development": {
-    "username": "babou360",
-    "password": "leebabou1995",
+    "username": "root",
+    "password": null,
     "database": "queing",
-    "host": "192.168.30.245",
-    "port": "3306",
+    "host": "localhost",
     "dialect": "mysql",
-    "logging": false,
+    "logging": true,
     "pool": {
       "max": 10,
       "min": 0,
