@@ -16,6 +16,8 @@ const doktas = require('./data/dokta')
 const rooms = require('./data/rooms')
 const networks = require('./data/network')
 const attendant_clinic = require('./data/attendant_clinics')
+const stream = require('./data/socket')
+const active = require('./data/active')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -50,6 +52,8 @@ app.use('/doktas',doktas)
 app.use('/rooms',rooms)
 app.use('/network',networks)
 app.use('/attendant_clinics',attendant_clinic)
+app.use('/socket',stream)
+app.use('/active',active)
 
 
 

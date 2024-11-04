@@ -151,6 +151,61 @@ router.get('/next_stage', async (req, res, next) => {
     }
 });
 // get all queues
+router.get('/priority', async (req, res, next) => {
+    const { ticket_no, data } = req.query
+    if(ticket_no.trim() === ""){
+        return res.status(400).json({ error: 'Token Number is required' });
+    }else if(data.trim()===""){
+        return res.status(400).json({ error: 'data is required' });
+    }else{
+        try{
+            const token = await Ticket.findOne({
+                where: {ticket_no}
+            })
+            if(token){
+                if(data==="serve"){
+                    const toks = await Ticket.findOne({
+                        where: {serving: true}
+                    })
+                    if(toks){
+                        if(toks.ticket_no===ticket_no){
+                            token.update({
+                                serving: false
+                            })
+                            res.json(token)
+                        }else{
+                            return res.status(400).json({ error: 'Finish One first' });
+                        }
+                    }else{
+                        token.update({
+                            serving: true
+                        })
+                        res.json(token)
+                    }
+                }else{
+                    if(token.ticket_no===ticket_no && token.disabled===true){
+                        token.update({
+                            disability: "",
+                            disabled: false
+                        })
+                        res.json(token)
+                    }else{
+                        token.update({
+                            disability: "special care",
+                            disabled: true
+                        })
+                        res.json(token)
+                    }
+                }
+            }else{
+                return res.status(400).json({ error: 'token not found' });  
+            }
+        }catch(error){
+            res.status(500).json({ error: err });
+        }
+    }
+});
+// get all queues
 router.post('/clinic_go', async (req, res, next) => {
     const { mr_number, stage, cashier_id } = req.body
     if(mr_number.trim() === ""){
@@ -640,7 +695,7 @@ const id = req.params.id
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id
-const {stage, mr_number, penalized, sex, recorder_id} = req.body
+const {stage, mr_number, penalized, sex, recorder_id, name} = req.body
     try {
         const ticket = await Ticket.findOne({
             where: { id }
@@ -660,7 +715,9 @@ const {stage, mr_number, penalized, sex, recorder_id} = req.body
             }else{
                 ticket.update({
                     status: "waiting",
+                    serving: false,
                     stage: stage,
+                    name: name,
                     gender: sex,
                     mr_no: mr_number,
                     disabled: penalized?false: ticket.disabled,
