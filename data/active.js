@@ -31,7 +31,9 @@ router.get('/get_active', async (req, res, next) => {
         const act = await Active.findOne({
             where: {page: page}
         })
-        res.json(act)
+        if(act){
+            res.json(act)
+        }
     }catch (error) {
         res.status(500).json({ error: error });
     }

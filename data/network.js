@@ -73,7 +73,6 @@ router.get("/get_device_id", async (req, res) => {
               const clinics = await AttendClinic.findAll({
                 where: {attendant_id: device.macAddress}
             })
-            console.log('device clinics are ',clinics)
               res.json({
                 id: device.id,
                 macAddress: device.macAddress,
