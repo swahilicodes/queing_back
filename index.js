@@ -22,6 +22,7 @@ const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
 const corsOptions ={
+  // origin:'https://qms.mloganzila.or.tz', 
   origin:'*', 
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials:true,            //access-control-allow-credentials:true

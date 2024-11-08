@@ -148,14 +148,25 @@ router.post('/finish_patient', async (req, res) => {
             doc.update({
                 current_patient: null
             })
-            const toke = await Ticket.findByPk(tic.id)
-            if(toke){
-                const { id, ...tokenFields } = toke.toJSON();
-                const backup = await TokenBackup.create(tokenFields)
+            const backup = await TokenBackup.findOne({
+                where: {ticket_no: tic.ticket_no}
+            })
+            if(backup){
+                backup.update({
+                    stage: "out",
+                    doctor_id: doctor_id,
+                clinic_time: new Date()
+                })
                 res.json(backup)
-            }else{
-                return res.status(404).json({ error: 'token not found' });
             }
+            // const toke = await Ticket.findByPk(tic.id)
+            // if(toke){
+            //     const { id, ...tokenFields } = toke.toJSON();
+            //     const backup = await TokenBackup.create(tokenFields)
+            //     res.json(backup)
+            // }else{
+            //     return res.status(404).json({ error: 'token not found' });
+            // }
         }
     } catch (err) {
         //next({error: err})

@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     ticket_no: {
       type: DataTypes.STRING(10),
       allowNull: false,
-      unique: true
+      unique: false
     },
     stage: {
       type: DataTypes.STRING,
@@ -35,7 +35,23 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    age: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
     gender: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    age: {
       type: DataTypes.STRING,
       allowNull: true,
     },

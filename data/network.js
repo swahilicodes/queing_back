@@ -91,6 +91,62 @@ router.get("/get_device_id", async (req, res) => {
         res.status(500).json({ error: error });
       }
 });
+// create new device
+router.post("/create_update", async (req, res) => {
+  const { macAddress, deviceModel, deviceName, manufacturer } = req.body
+  try{
+    const device = await Device.findOne({
+      where: {macAddress}
+  })
+  if(!device){
+      const div = await Device.create({
+          macAddress: macAddress,
+          deviceName: `${deviceName}`,
+          deviceModel: `${deviceModel}`,
+          manufucturer: `${manufacturer}` 
+       })
+       const clinics = await AttendClinic.findAll({
+        where: {attendant_id: div.macAddress}
+    })
+       res.json({
+        id: div.id,
+        macAddress: div.macAddress,
+        manufucturer:div.manufucturer,
+        deviceName: div.deviceName,
+        deviceModel: div.deviceModel,
+        default_page: div.default_page,
+        role: div.role,
+        createdAt: div.createdAt,
+        updatedAt: div.updatedAt,
+        clinics: clinics
+       })
+  }else{
+    device.update({
+      macAddress: macAddress,
+      deviceName: deviceName,
+      deviceModel: deviceModel,
+      manufucturer: manufacturer 
+    })
+    const clinics = await AttendClinic.findAll({
+      where: {attendant_id: device.macAddress}
+  })
+    res.json({
+      id: device.id,
+      macAddress: device.macAddress,
+      manufucturer:device.manufucturer,
+      deviceName: device.deviceName,
+      deviceModel: device.deviceModel,
+      default_page: device.default_page,
+      role: device.role,
+      createdAt: device.createdAt,
+      updatedAt: device.updatedAt,
+      clinics: clinics
+     })
+  }
+  }catch(error){
+
+  }
+});
 router.get("/get_devices", async (req, res) => {
   const page = parseInt(req.query.page) || 1;
   const pageSize = parseInt(req.query.pageSize) || 10;

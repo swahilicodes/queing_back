@@ -33,6 +33,14 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      category: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      age: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       clinic: {
         type: Sequelize.STRING,
         allowNull: true,

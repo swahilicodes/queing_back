@@ -21,7 +21,7 @@ module.exports = {
       ticket_no: {
         type: Sequelize.STRING(10),
         allowNull: false,
-        unique: true
+        unique: false
       },
       stage: {
         type: Sequelize.STRING,
@@ -88,6 +88,14 @@ module.exports = {
         allowNull: true,
       },
       doctor_id: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      category: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+      age: {
         type: Sequelize.STRING,
         allowNull: true,
       },

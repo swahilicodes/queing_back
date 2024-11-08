@@ -1,8 +1,9 @@
 const express = require('express');
-const { Ticket, Attendant, Counter, Dokta } = require('../models/index')
+const { Ticket, Attendant, Counter, Dokta, TokenBackup } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const axios = require('axios')
+const cron = require('node-cron');
 
 
 router.post('/create_ticket', async (req, res) => {
@@ -27,6 +28,14 @@ router.post('/create_ticket', async (req, res) => {
                 disabled: disability !==""? true: false,
                 phone,
                 ticket_no,
+                status: "waiting"
+            })
+            const backup = await TokenBackup.create({
+                disability,
+                disabled: disability !==""? true: false,
+                phone,
+                ticket_no,
+                stage: "meds",
                 status: "waiting"
             })
             res.json(ticket);
@@ -133,6 +142,100 @@ router.get('/get_display_tokens', async (req, res, next) => {
         }
     }
 });
+// get queues
+router.get('/get_clinic_tokens', async (req, res, next) => {
+    const {clinics, selected_clinic} = req.query
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+        if(selected_clinic || selected_clinic.trim() !== ""){
+            try {
+                const disabledToks = await Ticket.findAll({
+                    where: {stage:"nurse_station",status:"waiting",disabled: true,createdAt: {[Op.gte]: twelveHoursAgo},clinic_code: selected_clinic,paid: true},
+                    limit: 3,
+                    order: [
+                        // ['disabled', 'DESC'],
+                        ['createdAt', 'ASC'],
+                      ],
+                })
+                const normalToks = await Ticket.findAll({
+                    where: {stage:"nurse_station",status:"waiting",disabled: false,createdAt: {[Op.gte]: twelveHoursAgo},clinic_code: selected_clinic,paid: true},
+                    limit: 5,
+                    order: [['createdAt', 'ASC']],
+                })
+                const disabledIds = disabledToks.map(ticket => ticket.id);
+                const normalIds = normalToks.map(ticket => ticket.id);
+                const otherToks = await Ticket.findAll({
+                    where: {
+                        stage: "nurse_station",
+                        status: "waiting",
+                        clinic_code: selected_clinic,
+                        paid: true,
+                        createdAt: {[Op.gte]: twelveHoursAgo},
+                        id: {
+                            [Op.notIn]: [...disabledIds, ...normalIds],
+                        },
+                    },
+                    limit: 9 - (normalToks.length+disabledToks.length),
+                    order: [['createdAt', 'ASC']],
+                });
+                const curr = [...disabledToks,...normalToks, ...otherToks]
+                    const counters = await Counter.findAll();
+                    const result = curr.map(ticket => {
+                        const counter = counters.find(item => item.service === ticket.stage)
+                        return {
+                            ticket: ticket,
+                            counter: counter
+                        };
+                    });
+                    res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+        }else{
+            try {
+                const disabledToks = await Ticket.findAll({
+                    where: {stage:"nurse_station",status:"waiting",disabled: true,createdAt: {[Op.gte]: twelveHoursAgo},clinic_code: {[Op.in]: clinics,paid: true}},
+                    limit: 3,
+                    order: [
+                        // ['disabled', 'DESC'],
+                        ['createdAt', 'ASC'],
+                      ],
+                })
+                const normalToks = await Ticket.findAll({
+                    where: {stage:"nurse_station",status:"waiting",disabled: false,createdAt: {[Op.gte]: twelveHoursAgo},clinic_code: {[Op.in]: clinics,paid: true}},
+                    limit: 5,
+                    order: [['createdAt', 'ASC']],
+                })
+                const disabledIds = disabledToks.map(ticket => ticket.id);
+                const normalIds = normalToks.map(ticket => ticket.id);
+                const otherToks = await Ticket.findAll({
+                    where: {
+                        stage: "nurse_station",
+                        status: "waiting",
+                        clinic_code: {[Op.in]: clinics},
+                        paid: true,
+                        createdAt: {[Op.gte]: twelveHoursAgo},
+                        id: {
+                            [Op.notIn]: [...disabledIds, ...normalIds],
+                        },
+                    },
+                    limit: 9 - (normalToks.length+disabledToks.length),
+                    order: [['createdAt', 'ASC']],
+                });
+                const curr = [...disabledToks,...normalToks, ...otherToks]
+                    const counters = await Counter.findAll();
+                    const result = curr.map(ticket => {
+                        const counter = counters.find(item => item.service === ticket.stage)
+                        return {
+                            ticket: ticket,
+                            counter: counter
+                        };
+                    });
+                    res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
+    }
+});
 // get all queues
 router.get('/next_stage', async (req, res, next) => {
     const { mr_number } = req.query
@@ -208,24 +311,66 @@ router.get('/priority', async (req, res, next) => {
 // get all queues
 router.post('/clinic_go', async (req, res, next) => {
     const { mr_number, stage, cashier_id } = req.body
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
     }else{
         axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${mr_number}`).then(async (data)=> {
             if(data.data.status === 201){
-                return res.status(400).json({ error: data.data.data.consStatus });
+                const ticket = await Ticket.findOne({
+                    where: {mr_no: mr_number}
+                })
+                if(ticket){
+                  await ticket.update({
+                    clinic_code: data.data.data.clinicCode,
+                    serving: false,
+                    stage: stage,
+                    paid: false,
+                    account_time: new Date(),
+                    cashier_id: cashier_id
+                    })
+                    const backup = await TokenBackup.findOne({
+                        where: {ticket_no: ticket.ticket_no, createdAt: {[Op.gte]: twelveHoursAgo}}
+                    })
+                    if(backup){
+                        await backup.update({
+                            clinic_code: data.data.data.clinicCode,
+                            stage: stage,
+                            paid: false,
+                            account_time: new Date(),
+                            cashier_id: cashier_id
+                            }) 
+                    }
+                    res.json(data.data.data.consStatus)
+                }else{
+                    return res.status(400).json({ error: "patient not found" });
+                }
             }else{
                 const ticket = await Ticket.findOne({
                     where: {mr_no: mr_number}
                 })
                 if(ticket){
-                  const data002 =  await ticket.update({
+                  await ticket.update({
                     clinic_code: data.data.data.clinicCode,
                     stage: stage,
+                    paid: true,
+                    serving: false,
                     account_time: new Date(),
                     cashier_id: cashier_id
                     })
-                    res.json(data002)
+                    const backup = await TokenBackup.findOne({
+                        where: {ticket_no: ticket.ticket_no,createdAt: {[Op.gte]: twelveHoursAgo}}
+                    })
+                    if(backup){
+                        await backup.update({
+                            clinic_code: data.data.data.clinicCode,
+                            stage: stage,
+                            paid: true,
+                            account_time: new Date(),
+                            cashier_id: cashier_id
+                            }) 
+                    }
+                    res.json(data.data.data.consStatus)
                 }else{
                     return res.status(400).json({ error: "patient not found" });
                 }
@@ -433,7 +578,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
     try{
         if(mr_no.trim() !== ''){
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: {[Op.in]: clinic_code},status,mr_no: {[Op.like]:`%${mr_no}%`}}
+                where: {stage,clinic_code: {[Op.in]: clinic_code},status,mr_no: {[Op.like]:`%${mr_no}%`},paid: true}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
@@ -450,7 +595,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
             })
         }else{
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: clinic_code,status}
+                where: {stage,clinic_code: clinic_code,status,paid: true}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
@@ -695,7 +840,8 @@ const id = req.params.id
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id
-const {stage, mr_number, penalized, sex, recorder_id, name} = req.body
+const {stage, mr_number, penalized, sex, recorder_id, name, age} = req.body
+const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     try {
         const ticket = await Ticket.findOne({
             where: { id }
@@ -713,7 +859,7 @@ const {stage, mr_number, penalized, sex, recorder_id, name} = req.body
             if(tiki){
                 return res.status(400).json({ error: `${mr_number} exists in ${stage}` }); 
             }else{
-                ticket.update({
+                await ticket.update({
                     status: "waiting",
                     serving: false,
                     stage: stage,
@@ -723,9 +869,28 @@ const {stage, mr_number, penalized, sex, recorder_id, name} = req.body
                     disabled: penalized?false: ticket.disabled,
                     disability: penalized?"": ticket.disability,
                     med_time: new Date(),
-                    recorder_id: recorder_id
+                    recorder_id: recorder_id,
+                    age: age
                 })
-                res.json(ticket)
+                const backup = await TokenBackup.findOne({
+                    where: {ticket_no: ticket.ticket_no,createdAt: {[Op.gte]: twelveHoursAgo}}
+                }) 
+                if(backup){
+                    await backup.update({
+                        status: "waiting",
+                        //serving: false,
+                        stage: stage,
+                        name: name,
+                        gender: sex,
+                        mr_no: mr_number,
+                        disabled: penalized?false: ticket.disabled,
+                        disability: penalized?"": ticket.disability,
+                        med_time: new Date(),
+                        recorder_id: recorder_id,
+                        age: age
+                    })
+                }
+                res.json(backup)
             }
         }
     } catch (err) {
@@ -803,7 +968,17 @@ const { doctor_id, patient_id, nurse_id } = req.body
                 dokta.update({
                     current_patient: patient_id
                 })
-                res.json(dokta)
+                const backup = await TokenBackup.findOne({
+                    where: {ticket_no: ticket.ticket_no}
+                })
+                if(backup){
+                    backup.update({
+                        stage: "clinic",
+                        station_time: new Date(),
+                        nurse_id: nurse_id  
+                    })
+                    res.json(backup)
+                }
             }
         }
     } catch (err) {
@@ -826,4 +1001,27 @@ const { clinic_code } = req.query
         res.status(500).json({ error: err });
     }
 });
+// Cron job to find unpaid tickets every 5 minutes
+cron.schedule('*/5 * * * * *', async () => {
+    try {
+      const unpaidTickets = await Ticket.findAll({ where: { paid: false, stage: "nurse_station" } });
+      for (const ticket of unpaidTickets) {
+        try{
+            const response = await axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${ticket.mr_no}`);
+            if(response.data.status === 201 && response.data.data.consStatus==="Not Paid"){
+                //console.log('this token is not paid',ticket.mr_no)
+                //return
+            }else if(response.data.status===200 && response.data.data.consStatus==="Paid"){
+                ticket.update({
+                    paid: true
+                })
+            }
+        }catch (error){
+            res.status(500).json({ error: error }); 
+        }
+      }
+    } catch (error) {
+        res.status(500).json({ error: error });
+    }
+  });
 module.exports = router;

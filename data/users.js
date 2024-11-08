@@ -59,7 +59,7 @@ router.get('/get_user', async (req, res) => {
                         where: {phone: user.phone}
                     })
                     const clinics = await AttendClinic.findAll({
-                        attedant_id: usa.phone
+                        where: {attendant_id: usa.phone}
                     })
                     res.json({
                         id: usa.id,
@@ -75,6 +75,9 @@ router.get('/get_user', async (req, res) => {
                 }else if(user.role==="doctor"){
                     const usa = await Dokta.findOne({
                         where: {phone: user.phone}
+                    })
+                    const clinics = await AttendClinic.findAll({
+                        where: {attendant_id: usa.phone}
                     })
                     res.json({
                         id: usa.id,
