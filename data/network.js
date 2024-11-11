@@ -185,7 +185,7 @@ router.get("/get_devices", async (req, res) => {
 });
 // edit device
 router.get("/edit_device", async (req, res) => {
-  const { page, id } = req.query
+  const { page, id, deviceName, deviceModel, manufucturer } = req.query
   try {
     if(id.trim()===""){
       res.status(400).json({error: "id is empty"})
@@ -195,7 +195,10 @@ router.get("/edit_device", async (req, res) => {
       })
       if(div){
         div.update({
-          default_page: page
+          default_page: page,
+          deviceModel: deviceModel,
+          deviceName: deviceName,
+          manufucturer: manufucturer
         })
         res.json(div)
       }else{

@@ -571,6 +571,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
     const mr_no = req.query.phone
     const stage = req.query.stage
     const clinic_code = req.query.clinic_code
+    const current_clinic = req.query.current_clinic
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
@@ -578,7 +579,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
     try{
         if(mr_no.trim() !== ''){
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: {[Op.in]: clinic_code},status,mr_no: {[Op.like]:`%${mr_no}%`},paid: true}
+                where: {stage,clinic_code: current_clinic? current_clinic: {[Op.in]: clinic_code},status,mr_no: {[Op.like]:`%${mr_no}%`},paid: true}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
@@ -595,7 +596,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
             })
         }else{
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: clinic_code,status,paid: true}
+                where: {stage,clinic_code: current_clinic? current_clinic: {[Op.in]: clinic_code},status,paid: true}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
