@@ -9,6 +9,7 @@ const cron = require('node-cron');
 router.post('/create_ticket', async (req, res) => {
     const { phone,disability} = req.body;
     let ticket_no
+    let back_no
     try {
         if(phone.trim() === ''){
             return res.status(400).json({ error: 'phone is required' });
@@ -30,15 +31,33 @@ router.post('/create_ticket', async (req, res) => {
                 ticket_no,
                 status: "waiting"
             })
-            const backup = await TokenBackup.create({
-                disability,
-                disabled: disability !==""? true: false,
-                phone,
-                ticket_no,
-                stage: "meds",
-                status: "waiting"
-            })
-            res.json(ticket);
+            const lastBackup = await TokenBackup.findOne({
+                order: [['createdAt', 'DESC']]
+              });
+            if(lastBackup){
+                const lastTicketNumber = lastBackup.ticket_no;
+                const numericPart = parseInt(lastTicketNumber, 10);
+                back_no = (numericPart + 1).toString().padStart(3, '0');
+                const backup = await TokenBackup.create({
+                    disability,
+                    disabled: disability !==""? true: false,
+                    phone,
+                    ticket_no: back_no,
+                    stage: "meds",
+                    status: "waiting"
+                })
+                res.json(ticket);
+            }else{
+                const backup = await TokenBackup.create({
+                    disability,
+                    disabled: disability !==""? true: false,
+                    phone,
+                    ticket_no,
+                    stage: "meds",
+                    status: "waiting"
+                })
+                res.json(ticket);
+            }
         }
     } catch (err) {
         //next({error: err})

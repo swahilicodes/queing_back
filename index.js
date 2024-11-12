@@ -19,6 +19,7 @@ const attendant_clinic = require('./data/attendant_clinics')
 const stream = require('./data/socket')
 const active = require('./data/active')
 const currentClinic = require('./data/current_clinic')
+const speaker = require('./data/speaker')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -57,6 +58,7 @@ app.use('/attendant_clinics',attendant_clinic)
 app.use('/socket',stream)
 app.use('/active',active)
 app.use('/current_clinic',currentClinic)
+app.use('/speaker',speaker)
 
 
 
