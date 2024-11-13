@@ -615,7 +615,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
             })
         }else{
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: current_clinic? current_clinic: {[Op.in]: clinic_code},status,paid: true}
+                where: {stage,clinic_code: current_clinic? current_clinic: {[Op.in]: clinic_code},status,paid: false}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
@@ -983,13 +983,14 @@ const { doctor_id, patient_id, nurse_id } = req.body
                 ticket.update({
                     stage: "clinic",
                     station_time: new Date(),
-                    nurse_id: nurse_id
+                    nurse_id: nurse_id,
+                    serving: false
                 })
                 dokta.update({
                     current_patient: patient_id
                 })
                 const backup = await TokenBackup.findOne({
-                    where: {ticket_no: ticket.ticket_no}
+                    where: {mr_no: ticket.mr_no}
                 })
                 if(backup){
                     backup.update({
@@ -997,8 +998,8 @@ const { doctor_id, patient_id, nurse_id } = req.body
                         station_time: new Date(),
                         nurse_id: nurse_id  
                     })
-                    res.json(backup)
                 }
+                res.json(ticket)
             }
         }
     } catch (err) {

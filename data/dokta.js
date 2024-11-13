@@ -85,20 +85,35 @@ router.get('/get_doktas', async (req, res) => {
 router.get('/get_free_doktas', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
-    const clinic_code = req.query.clinic_code;
+    const selected_clinic = req.query.selected_clinic;
+    const clinics = req.query.clinics;
     const offset = (page - 1) * pageSize;
     try {
-        const curr = await Dokta.findAndCountAll({
-            where: {clinic_code,current_patient: {[Op.eq]: null}},
-            offset: offset,
-            limit: pageSize,
-            order: [['id', 'ASC']]
-        })
-        res.json({
-            data: curr.rows,
-            totalItems: curr.count,
-            totalPages: Math.ceil(curr.count / pageSize),
-          });
+        if(selected_clinic.trim() !== ""){
+            const curr = await Dokta.findAndCountAll({
+                where: {clinic_code: selected_clinic,current_patient: {[Op.eq]: null}},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              }); 
+        }else{
+            const curr = await Dokta.findAndCountAll({
+                where: {clinic_code: {[Op.in]: clinics},current_patient: {[Op.eq]: null}},
+                offset: offset,
+                limit: pageSize,
+                order: [['id', 'ASC']]
+            })
+            res.json({
+                data: curr.rows,
+                totalItems: curr.count,
+                totalPages: Math.ceil(curr.count / pageSize),
+              });
+        }
     } catch (err) {
         //next({error: err})
         res.status(500).json({ error: err });
