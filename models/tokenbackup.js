@@ -96,6 +96,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
+    date: {
+      type: DataTypes.DATEONLY,
+      allowNull: true,
+    },
     recorder_id: {
       type: DataTypes.STRING,
       allowNull: true,

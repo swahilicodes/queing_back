@@ -893,7 +893,7 @@ const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
                     age: age
                 })
                 const backup = await TokenBackup.findOne({
-                    where: {ticket_no: ticket.ticket_no,createdAt: {[Op.gte]: twelveHoursAgo}}
+                    where: {createdAt: ticket.createdAt}
                 }) 
                 if(backup){
                     await backup.update({

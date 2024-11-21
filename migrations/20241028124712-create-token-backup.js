@@ -18,6 +18,11 @@ module.exports = {
         defaultValue: new Date(),
         allowNull: false,
       },
+      date: {
+        type: Sequelize.DATEONLY,
+        defaultValue: new Date(),
+        allowNull: false,
+      },
       ticket_no: {
         type: Sequelize.STRING(10),
         allowNull: false,
