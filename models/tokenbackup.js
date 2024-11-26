@@ -98,7 +98,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     date: {
       type: DataTypes.DATEONLY,
-      allowNull: true,
+      allowNull: false,
+      defaultValue: new Date()
     },
     recorder_id: {
       type: DataTypes.STRING,
