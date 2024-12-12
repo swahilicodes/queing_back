@@ -100,7 +100,7 @@ router.get('/get_display_tokens', async (req, res, next) => {
                             [Op.notIn]: [...disabledIds, ...normalIds],
                         },
                     },
-                    limit: 9 - (normalToks.length+disabledToks.length),
+                    limit: 10 - (normalToks.length+disabledToks.length),
                     order: [['createdAt', 'ASC']],
                 });
                 const curr = [...disabledToks,...normalToks, ...otherToks]
@@ -142,7 +142,7 @@ router.get('/get_display_tokens', async (req, res, next) => {
                             [Op.notIn]: [...disabledIds, ...normalIds],
                         },
                     },
-                    limit: 9 - (normalToks.length+disabledToks.length),
+                    limit: 10 - (normalToks.length+disabledToks.length),
                     order: [['createdAt', 'ASC']],
                 });
                 const curr = [...disabledToks,...normalToks, ...otherToks]
@@ -159,6 +159,57 @@ router.get('/get_display_tokens', async (req, res, next) => {
                 res.status(500).json({ error: err });
             }
         }
+    }
+});
+// get queues
+router.get('/pata_clinic', async (req, res, next) => {
+    const {stage, clinics} = req.query
+    const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    if(stage.trim() === ""){
+        return res.status(400).json({ error: 'stage is required is required' }); 
+    }else{
+        try {
+                const disabledToks = await Ticket.findAll({
+                    where: {stage:stage,status:"waiting",disabled: true,paid: true, clinic_code: {[Op.in]: clinics}},
+                    limit: 3,
+                    order: [
+                        // ['disabled', 'DESC'],
+                        ['createdAt', 'ASC'],
+                      ],
+                })
+                const normalToks = await Ticket.findAll({
+                    where: {stage:stage,status:"waiting",disabled: false,paid: true, clinic_code: {[Op.in]: clinics}},
+                    limit: 5,
+                    order: [['createdAt', 'ASC']],
+                })
+                const disabledIds = disabledToks.map(ticket => ticket.id);
+                const normalIds = normalToks.map(ticket => ticket.id);
+                const otherToks = await Ticket.findAll({
+                    where: {
+                        stage: stage,
+                        status: "waiting",
+                        paid: true, 
+                        clinic_code: {[Op.in]: clinics},
+                        id: {
+                            [Op.notIn]: [...disabledIds, ...normalIds],
+                        },
+                    },
+                    limit: 10 - (normalToks.length+disabledToks.length),
+                    order: [['createdAt', 'ASC']],
+                });
+                const curr = [...disabledToks,...normalToks, ...otherToks]
+                    const counters = await Counter.findAll();
+                    const result = curr.map(ticket => {
+                        const counter = counters.find(item => item.service === ticket.stage)
+                        return {
+                            ticket: ticket,
+                            counter: counter
+                        };
+                    });
+                    res.json(result);
+            } catch (err) {
+                res.status(500).json({ error: err });
+            }
     }
 });
 // get queues
@@ -261,12 +312,17 @@ router.get('/next_stage', async (req, res, next) => {
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
     }else{
-        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/patient/${mr_number}`).then((data)=> {
-            if (Array.isArray(data.data.data)) {
+        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/patients/${mr_number}`).then((data)=> {
+            if(data.data.status === 201){
+                return res.status(400).json({ error: 'Mr Number does not exist' }); 
+            }else{
                 res.json(data.data.data)
-              } else {
-                return res.status(400).json({ error: data.data.data });
-              }
+            }
+            // if (Array.isArray(data.data.data)) {
+            //     res.json(data.data.data)
+            //   } else {
+            //     return res.status(400).json({ error: data.data.data });
+            //   }
         }).catch((error)=> {
             return res.status(400).json({ error: error });
         })
@@ -274,11 +330,13 @@ router.get('/next_stage', async (req, res, next) => {
 });
 // get all queues
 router.get('/priority', async (req, res, next) => {
-    const { ticket_no, data } = req.query
+    const { ticket_no, data, stage } = req.query
     if(ticket_no.trim() === ""){
         return res.status(400).json({ error: 'Token Number is required' });
     }else if(data.trim()===""){
         return res.status(400).json({ error: 'data is required' });
+    }else if(stage.trim()===""){
+        return res.status(400).json({ error: 'stage is required' });
     }else{
         try{
             const token = await Ticket.findOne({
@@ -287,7 +345,7 @@ router.get('/priority', async (req, res, next) => {
             if(token){
                 if(data==="serve"){
                     const toks = await Ticket.findOne({
-                        where: {serving: true}
+                        where: {serving: true,stage: stage}
                     })
                     if(toks){
                         if(toks.ticket_no===ticket_no){
@@ -296,7 +354,14 @@ router.get('/priority', async (req, res, next) => {
                             })
                             res.json(token)
                         }else{
-                            return res.status(400).json({ error: 'Finish One first' });
+                            if(stage === "nurse_station"){
+                                token.update({
+                                    serving: true
+                                })
+                                res.json(token) 
+                            }else{
+                                return res.status(400).json({ error: 'Finish One first' });
+                            }
                         }
                     }else{
                         token.update({
@@ -615,7 +680,7 @@ router.get('/getClinicTickets', async (req, res, next) => {
             })
         }else{
             const tickets = await Ticket.findAll({
-                where: {stage,clinic_code: current_clinic? current_clinic: {[Op.in]: clinic_code},status,paid: false}
+                where: {stage,clinic_code: current_clinic? current_clinic: {[Op.in]: clinic_code},status,paid: true}
             })
             const counters = await Counter.findAll()
             const result = tickets.map(cu => {
@@ -860,7 +925,7 @@ const id = req.params.id
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id
-const {stage, mr_number, penalized, sex, recorder_id, name, age} = req.body
+const {stage, mr_number, penalized, sex, recorder_id, name, age, category} = req.body
 const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     try {
         const ticket = await Ticket.findOne({
@@ -890,6 +955,7 @@ const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
                     disability: penalized?"": ticket.disability,
                     med_time: new Date(),
                     recorder_id: recorder_id,
+                    category,
                     age: age
                 })
                 const backup = await TokenBackup.findOne({
@@ -907,7 +973,8 @@ const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
                         disability: penalized?"": ticket.disability,
                         med_time: new Date(),
                         recorder_id: recorder_id,
-                        age: age
+                        age: age,
+                        category
                     })
                 }
                 res.json(backup)
@@ -1034,7 +1101,8 @@ cron.schedule('*/5 * * * * *', async () => {
                 //return
             }else if(response.data.status===200 && response.data.data.consStatus==="Paid"){
                 ticket.update({
-                    paid: true
+                    paid: true,
+                    clinic_code: data.data.clinicCode
                 })
             }
         }catch (error){

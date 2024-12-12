@@ -5,21 +5,12 @@ const { Op, fn, col } = require('sequelize')
 const Sequelize = require('sequelize')
 
 router.get('/token_analytics', async (req, res, next) => {
-    function removeDuplicates(arr){
-        const uniqueTokens = Array.from(
-            arr.reduce((map, current) => {
-                const existing = map.get(current.date);
-                if (!existing || new Date(current.date) > new Date(existing.date)) {
-                  map.set(current.date, current); // Keep the more recent token.
-                }
-                return map;
-              }, new Map())
-              .values() // Extract the unique values from the map.
-          );
-          return uniqueTokens
-    }
     try {
-        const tokens = await TokenBackup.findAll()
+        const tokens = await TokenBackup.findAll({
+            order: [
+                ['createdAt','DESC']
+            ]
+        })
         const results = []
         const result = await Promise.all(
             tokens.map(async (item) => {
@@ -50,7 +41,110 @@ router.get('/token_analytics', async (req, res, next) => {
                 results.push(value);
             }
         }
-        res.json(results)
+        res.json(results.splice(0, 7))
+    } catch (error) {
+        next(error); // Passes the error to the error-handling middleware
+    }
+})
+router.get('/stage_analytics', async (req, res, next) => {
+    const {stage,time_factor} = req.query
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1); // First day of this month
+    const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
+    const startOfYear = new Date(new Date().getFullYear(), 0, 1); // Jan 1st of this year
+    const endOfYear = new Date(new Date().getFullYear() + 1, 0, 1);
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0 (Sunday) to 6 (Saturday)
+    const diffToSunday = -dayOfWeek;
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() + diffToSunday);
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 7);
+    const formatDate = (date) => {
+        const d = new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0'); // Months are zero-indexed
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
+      };
+    try {
+        const tokens = await TokenBackup.findAll({
+            order: [
+                ['createdAt','DESC']
+            ],
+            where: {
+                stage,
+                createdAt: time_factor==="month"?{[Op.between]: [startOfMonth,endOfMonth]}: time_factor==="year"?{[Op.between]: [startOfYear,endOfYear]}:{[Op.between]: [startOfWeek, endOfWeek]}
+            }
+        })
+        const results = []
+        const keyValue = () => {
+            if(stage==="meds"){
+                return 'med_time'
+            }else if(stage==='accounts'){
+                return 'account_time'
+            }else if(stage==='nurse_station'){
+                return 'station_time'
+            }else if(stage==="clinic"){
+                return 'clinic_time'
+            }else{
+                return null
+            }
+        }
+        console.log('current stage time is ',keyValue())
+        const result = await Promise.all(
+            tokens.map(async (item) => {
+                const filteredTokens = tokens.filter((data) => data.date === item.date);
+                //const completed = filteredTokens.filter((data) => data[keyValue()] !== null).length;
+                const uncompleted = filteredTokens.filter((data) => data[keyValue()] === null).length;
+        
+                const date = new Date(item.date);
+                const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+                const day = daysOfWeek[date.getDay()];
+        
+                const totalTokensForDate = await TokenBackup.count({
+                    where: { date: item.date.toString() },
+                });
+                const completed = totalTokensForDate - uncompleted
+                const meds_time = new Date(stage==="meds"?item.med_time:stage==="accounts"?item.account_time:stage==="nurse_station"?item.station_time:item.clinic_time) - new Date(stage==="meds"?item.createdAt:stage==="accounts"?item.med_time:stage==="nurse_station"?item.account_time: stage==="clinic"?item.station_time:item.clinic_time)/ (1000 * 60 * 60);
+                // const accounts_time = new Date(item.account_time) - new Date(item.med_time)/ (1000 * 60 * 60);
+                // const station_time = new Date(item.station_time) - new Date(item.account_time)/ (1000 * 60 * 60);
+                // const clinic_time = new Date(item.clinic_time) - new Date(item.station_time)/ (1000 * 60 * 60);
+        
+                return {
+                    completed,
+                    uncompleted,
+                    total: totalTokensForDate,
+                    day,
+                    date: item.date,
+                    stage: item.stage,
+                    diff_time: meds_time
+                };
+            })
+        );
+        for (let value of result) {
+            if (results.map((item)=> item.date).includes(value.date)) {
+            } else {
+                results.push(value);
+            }
+        }
+        if (time_factor === "month" || time_factor === "year") {
+            const sum = results.reduce((accumulator, current) => accumulator + current.total, 0);
+            const sum_complete = results.reduce((accumulator, current) => accumulator + current.completed, 0);
+            const sum_uncomplete = results.reduce((accumulator, current) => accumulator + current.uncompleted, 0);
+            res.json([{ 
+                total: sum,
+                completed: sum_complete,
+                uncompleted: sum_uncomplete,
+                day: time_factor==="year"?`${formatDate(startOfYear)}-${formatDate(endOfYear)}`:`${formatDate(startOfMonth)}-${endOfMonth}`,
+                date: new Date(),
+                stage: stage,
+                diff_time: 120
+            }]);
+        } else {
+            res.json(results);
+        }
     } catch (error) {
         next(error); // Passes the error to the error-handling middleware
     }
