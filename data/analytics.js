@@ -92,12 +92,24 @@ router.get('/stage_analytics', async (req, res, next) => {
                 return null
             }
         }
-        console.log('current stage time is ',keyValue())
+        const keyValue01 = () => {
+            if(stage==="meds"){
+                return 'createdAt'
+            }else if(stage==='accounts'){
+                return 'med_time'
+            }else if(stage==='nurse_station'){
+                return 'account_time'
+            }else if(stage==="clinic"){
+                return 'station_time'
+            }else{
+                return null
+            }
+        }
         const result = await Promise.all(
             tokens.map(async (item) => {
                 const filteredTokens = tokens.filter((data) => data.date === item.date);
-                //const completed = filteredTokens.filter((data) => data[keyValue()] !== null).length;
                 const uncompleted = filteredTokens.filter((data) => data[keyValue()] === null).length;
+                const completed = filteredTokens.filter((data) => data[keyValue()] !== null).length;
         
                 const date = new Date(item.date);
                 const daysOfWeek = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -106,11 +118,7 @@ router.get('/stage_analytics', async (req, res, next) => {
                 const totalTokensForDate = await TokenBackup.count({
                     where: { date: item.date.toString() },
                 });
-                const completed = totalTokensForDate - uncompleted
-                const meds_time = new Date(stage==="meds"?item.med_time:stage==="accounts"?item.account_time:stage==="nurse_station"?item.station_time:item.clinic_time) - new Date(stage==="meds"?item.createdAt:stage==="accounts"?item.med_time:stage==="nurse_station"?item.account_time: stage==="clinic"?item.station_time:item.clinic_time)/ (1000 * 60 * 60);
-                // const accounts_time = new Date(item.account_time) - new Date(item.med_time)/ (1000 * 60 * 60);
-                // const station_time = new Date(item.station_time) - new Date(item.account_time)/ (1000 * 60 * 60);
-                // const clinic_time = new Date(item.clinic_time) - new Date(item.station_time)/ (1000 * 60 * 60);
+                const meds_time = (new Date(item[keyValue()]) - new Date(item[keyValue01()])) / (1000 * 60 * 60)
         
                 return {
                     completed,
@@ -119,7 +127,7 @@ router.get('/stage_analytics', async (req, res, next) => {
                     day,
                     date: item.date,
                     stage: item.stage,
-                    diff_time: meds_time
+                    diff_time: meds_time <0 ?0 : meds_time
                 };
             })
         );
@@ -133,6 +141,8 @@ router.get('/stage_analytics', async (req, res, next) => {
             const sum = results.reduce((accumulator, current) => accumulator + current.total, 0);
             const sum_complete = results.reduce((accumulator, current) => accumulator + current.completed, 0);
             const sum_uncomplete = results.reduce((accumulator, current) => accumulator + current.uncompleted, 0);
+            const total_time = results.reduce((accumulator, current) => accumulator + current.diff_time, 0);
+            const average = total_time/results.map((item)=> item.diff_time).length
             res.json([{ 
                 total: sum,
                 completed: sum_complete,
@@ -140,7 +150,7 @@ router.get('/stage_analytics', async (req, res, next) => {
                 day: time_factor==="year"?`${formatDate(startOfYear)}-${formatDate(endOfYear)}`:`${formatDate(startOfMonth)}-${endOfMonth}`,
                 date: new Date(),
                 stage: stage,
-                diff_time: 120
+                average: average,
             }]);
         } else {
             res.json(results);
