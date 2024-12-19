@@ -20,7 +20,7 @@ module.exports = {
       },
       date: {
         type: Sequelize.DATEONLY,
-        defaultValue: new Date(),
+        defaultValue: new Date().toISOString().slice(0, 10),
         allowNull: false,
       },
       ticket_no: {

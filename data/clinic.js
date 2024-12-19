@@ -4,6 +4,7 @@ const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs");
 const { default: axios } = require('axios');
+const cron = require('node-cron');
 
 
 router.post('/create_clinic', async (req, res) => {
@@ -52,6 +53,67 @@ router.get('/get_clinics', async (req, res) => {
     } catch (err) {
         res.status(500).json({ error: err });
     }
+});
+
+router.get("/get_display_clinics", async (req, res) => {
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    try {
+        const curr = await Clinic.findAndCountAll({
+            offset: offset,
+            limit: pageSize,
+            order: [['createdAt', 'ASC']]
+        })
+        res.json({
+            data: curr.rows,
+            totalItems: curr.count,
+            totalPages: Math.ceil(curr.count / pageSize),
+          });
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+  });
+// recreate clinics
+cron.schedule('0 0 * * *', async () => {
+    try {
+        // Fetch data from the API
+        const response = await axios.get('http://192.168.235.65/dev/jeeva_api/swagger/clinics');
+    
+        if (response.data.status !== 200 || !Array.isArray(response.data.data)) {
+          console.error('Unexpected API response format:', response.data);
+          return;
+        }
+    
+        const apiClinics = response.data.data;
+    
+        // Fetch existing clinics from the database
+        const dbClinics = await Clinic.findAll({
+          attributes: ['clinicicode', 'cliniciname', 'status', 'deptcode'],
+          raw: true,
+        });
+    
+        // Find items that are in the API response but not in the database
+        const reserves = apiClinics.filter(apiClinic => {
+          return !dbClinics.some(dbClinic => dbClinic.clinicicode === apiClinic.clinicode);
+        });
+    
+        // Insert the new records into the database
+        if (reserves.length > 0) {
+          await Clinic.bulkCreate(reserves.map(item => ({
+            cliniciname: item.clinicname,
+            clinicicode: item.clinicode,
+            status: item.status,
+            deptcode: item.deptcode,
+          })));
+          console.log(`${reserves.length} new clinics added to the database.`);
+        } else {
+          console.log('No new clinics to add.');
+        }
+      } catch (error) {
+        console.error('Error fetching or syncing clinics:', error);
+      }
 });
 
 module.exports = router;

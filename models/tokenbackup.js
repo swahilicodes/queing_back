@@ -99,7 +99,7 @@ module.exports = (sequelize, DataTypes) => {
     date: {
       type: DataTypes.DATEONLY,
       allowNull: false,
-      defaultValue: new Date()
+      defaultValue: new Date().toISOString().slice(0, 10)
     },
     recorder_id: {
       type: DataTypes.STRING,

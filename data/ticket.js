@@ -44,7 +44,7 @@ router.post('/create_ticket', async (req, res) => {
                     phone,
                     ticket_no: back_no,
                     stage: "meds",
-                    status: "waiting"
+                    status: "waiting",
                 })
                 res.json(ticket);
             }else{
@@ -54,7 +54,7 @@ router.post('/create_ticket', async (req, res) => {
                     phone,
                     ticket_no,
                     stage: "meds",
-                    status: "waiting"
+                    status: "waiting",
                 })
                 res.json(ticket);
             }
@@ -414,7 +414,7 @@ router.post('/clinic_go', async (req, res, next) => {
                     cashier_id: cashier_id
                     })
                     const backup = await TokenBackup.findOne({
-                        where: {ticket_no: ticket.ticket_no, createdAt: {[Op.gte]: twelveHoursAgo}}
+                        where: {mr_no: ticket.mr_no, createdAt: {[Op.gte]: twelveHoursAgo}}
                     })
                     if(backup){
                         await backup.update({
@@ -443,7 +443,7 @@ router.post('/clinic_go', async (req, res, next) => {
                     cashier_id: cashier_id
                     })
                     const backup = await TokenBackup.findOne({
-                        where: {ticket_no: ticket.ticket_no,createdAt: {[Op.gte]: twelveHoursAgo}}
+                        where: {mr_no: ticket.mr_no,createdAt: {[Op.gte]: twelveHoursAgo}}
                     })
                     if(backup){
                         await backup.update({
