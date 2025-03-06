@@ -330,7 +330,7 @@ router.get('/next_stage', async (req, res, next) => {
 });
 // get all queues
 router.get('/priority', async (req, res, next) => {
-    const { ticket_no, data, stage } = req.query
+    const { ticket_no, data, stage, reason } = req.query
     if(ticket_no.trim() === ""){
         return res.status(400).json({ error: 'Token Number is required' });
     }else if(data.trim()===""){
@@ -378,7 +378,7 @@ router.get('/priority', async (req, res, next) => {
                         res.json(token)
                     }else{
                         token.update({
-                            disability: "special care",
+                            disability: reason,
                             disabled: true
                         })
                         res.json(token)
@@ -951,8 +951,8 @@ const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
                     name: name,
                     gender: sex,
                     mr_no: mr_number,
-                    disabled: penalized?false: ticket.disabled,
-                    disability: penalized?"": ticket.disability,
+                    // disabled: penalized?false: ticket.disabled,
+                    // disability: penalized?"": ticket.disability,
                     med_time: new Date(),
                     recorder_id: recorder_id,
                     category,

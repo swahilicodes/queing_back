@@ -46,8 +46,67 @@ router.get('/token_analytics', async (req, res, next) => {
         next(error); // Passes the error to the error-handling middleware
     }
 })
+
+router.get('/peak_times', async (req, res, next) => {
+    const { time } = req.query
+    const now = new Date();
+    // day
+    startDay = new Date(now.setHours(0, 0, 0, 0));
+    endDay = new Date(now.setHours(23, 59, 59, 999));
+    //week
+    startWeek = new Date(now.setDate(now.getDate() - now.getDay()));
+    startWeek.setHours(0, 0, 0, 0);
+    endWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));
+    endWeek.setHours(23, 59, 59, 999);
+    // month
+    startMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    endMonth.setHours(23, 59, 59, 999);
+    // year
+    startYear = new Date(now.getFullYear(), 0, 1);
+    endYear = new Date(now.getFullYear(), 11, 31);
+    endYear.setHours(23, 59, 59, 999);
+
+    const getTimeRange = (time) => {
+        if (time === "day") {
+            return [startDay, endDay]
+        }else if (time === "week") {
+            return [startWeek, endWeek];
+        }else if (time === "month") {
+            return [startMonth, endMonth];
+        }else {
+            return [startYear, endYear];
+        }
+    }
+    try{
+        const peakTimes = await TokenBackup.findAll({
+            where: {
+                createdAt: {
+                    [Op.between]: getTimeRange(time),
+                },
+            },
+            attributes: [
+                [
+                    Sequelize.fn(
+                        'DATE_FORMAT',
+                        Sequelize.fn('CONVERT_TZ', Sequelize.col('createdAt'), '+00:00', '+03:00'),
+                        '%H:00'
+                    ),
+                    'hour'
+                ],
+                [Sequelize.fn('COUNT', Sequelize.col('id')), 'count']
+            ],
+            group: ['hour'],
+            order: [[Sequelize.literal('count'), 'DESC']],
+            limit: 3,
+        });
+        res.json(peakTimes)
+    }catch (error) {
+        next(error); // Passes the error to the error-handling middleware
+    } 
+})
 router.get('/stage_analytics', async (req, res, next) => {
-    const {stage,time_factor} = req.query
+    const {stage,time_factor, clinic} = req.query
     const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1); // First day of this month
     const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1);
     const startOfYear = new Date(new Date().getFullYear(), 0, 1); // Jan 1st of this year
@@ -77,9 +136,57 @@ router.get('/stage_analytics', async (req, res, next) => {
             order: [
                 ['createdAt','ASC']
             ],
+            attributes: [
+                'id',
+                'clinic_code',
+                'status',
+                'dateTime',
+                'date',
+                'ticket_no',
+                'stage',
+                'mr_no',
+                'clinic',
+                'updatedAt',
+                'gender',
+                'consult_doctor',
+                'disability',
+                'disabled',
+                'phone',
+                'med_time',
+                'account_time',
+                'station_time',
+                'clinic_time',
+                'recorder_id',
+                'cashier_id',
+                'nurse_id',
+                'doctor_id',
+                'category',
+                'age',
+                'paid',
+                [fn('CONVERT_TZ', col('createdAt'), '+00:00', '+03:00'), 'createdAt'],
+                // [
+                //     Sequelize.fn(
+                //         'DATE_FORMAT',
+                //         Sequelize.fn('CONVERT_TZ', Sequelize.col('createdAt'), '+00:00', '+03:00'),
+                //     ),
+                //     'createdAtlocal'
+                // ],
+            ],
             where: {
-                //...(stage !== "all" && { stage }),
-                createdAt: time_factor==="month"?{[Op.between]: [startOfMonth,endOfMonth]}: time_factor==="year"?{[Op.between]: [startOfYear,endOfYear]}:{[Op.between]: [startOfWeek, endOfWeek]}
+                [Op.and]: [
+                    clinic.trim() !== "" ? { clinic_code: clinic.trim() } : null,
+                    // stage !== "all" ? { stage } : null, // Uncomment if you want to include the stage condition
+                    {
+                      createdAt: time_factor === "month"
+                        ? { [Op.between]: [startOfMonth, endOfMonth] }
+                        : time_factor === "year"
+                        ? { [Op.between]: [startOfYear, endOfYear] }
+                        : { [Op.between]: [startOfWeek, endOfWeek] }
+                    }
+                  ].filter(condition => condition !== null)
+                // clinic_code: clinic.trim() !== ""?clinic:null,
+                // //...(stage !== "all" && { stage }),
+                // createdAt: time_factor==="month"?{[Op.between]: [startOfMonth,endOfMonth]}: time_factor==="year"?{[Op.between]: [startOfYear,endOfYear]}:{[Op.between]: [startOfWeek, endOfWeek]}
             }
         })
         const formatedDate = (currentMilliseconds) => {
