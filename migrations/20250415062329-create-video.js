@@ -2,24 +2,24 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('active', {
+    await queryInterface.createTable('videos', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      isActive: {
-        type: Sequelize.BOOLEAN,
-        allowNull: false
-      },
-      page: {
+      name: {
         type: Sequelize.STRING,
         allowNull: false
       },
-      video: {
+      description: {
+        type: Sequelize.STRING(1000),
+        allowNull: false
+      },
+      url: {
         type: Sequelize.STRING,
-        allowNull: false,
+        allowNull: false
       },
       createdAt: {
         allowNull: false,
@@ -32,6 +32,6 @@ module.exports = {
     });
   },
   async down(queryInterface, Sequelize) {
-    await queryInterface.dropTable('active');
+    await queryInterface.dropTable('videos');
   }
 };

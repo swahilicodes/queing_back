@@ -3,21 +3,22 @@ const router = express.Router();
 const { Active } = require('../models/index')
 
 router.post('/activate', async (req, res, next) => {
-    const page = req.body.page
+    const {page, video} = req.body
     try{
-        //res.status(400).json('the page is ',page)
         const act = await Active.findOne({
             where: {page: page}
         })
         if(act){
             act.update({
-                isActive: !act.isActive
+                isActive: !act.isActive,
+                video: video
             })
             res.json(act)
         }else{
             const att = await Active.create({
                 isActive: true,
-                page: page
+                page: page,
+                video: video
             })
             res.json(att)
         }

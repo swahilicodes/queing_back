@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path')
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const queue = require('./data/queue')
@@ -18,6 +19,7 @@ const networks = require('./data/network')
 const attendant_clinic = require('./data/attendant_clinics')
 const stream = require('./data/socket')
 const active = require('./data/active')
+const uploads = require('./data/video')
 const currentClinic = require('./data/current_clinic')
 const speaker = require('./data/speaker')
 const analytics = require('./data/analytics')
@@ -61,6 +63,10 @@ app.use('/active',active)
 app.use('/current_clinic',currentClinic)
 app.use('/speaker',speaker)
 app.use('/analytics',analytics)
+app.use('/uploads',uploads)
+app.use(express.static('public'));
+app.use('/uploads', express.static('uploads'));
+app.use('/public', express.static(path.join(__dirname, 'public')));
 
 
 

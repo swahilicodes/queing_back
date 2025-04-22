@@ -3,6 +3,7 @@ const { Dokta, User, Counter, Patient, Ticket, TokenBackup } = require('../model
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
+const axios = require('axios')
 
 
 router.post('/create_dokta', async (req, res) => {
@@ -143,6 +144,11 @@ router.put('/delete_dokta/:id', async (req, res) => {
 // Finish Patient
 router.post('/finish_patient', async (req, res) => {
     const {doctor_id, patient_id} = req.body
+    const now = new Date();
+
+    const formattedDate = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0');
     try {
         const doc = await Dokta.findOne({
             where: {phone: doctor_id}
@@ -155,33 +161,97 @@ router.post('/finish_patient', async (req, res) => {
         }else if (!tic){
             return res.status(404).json({ error: 'patient not found' });
         }else{
-            tic.update({
-                stage: "out",
-                doctor_id: doctor_id,
-                clinic_time: new Date()
-            })
-            doc.update({
-                current_patient: null
-            })
-            const backup = await TokenBackup.findOne({
-                where: {ticket_no: tic.ticket_no}
-            })
-            if(backup){
-                backup.update({
-                    stage: "out",
-                    doctor_id: doctor_id,
-                clinic_time: new Date()
-                })
-                res.json(backup)
-            }
-            // const toke = await Ticket.findByPk(tic.id)
-            // if(toke){
-            //     const { id, ...tokenFields } = toke.toJSON();
-            //     const backup = await TokenBackup.create(tokenFields)
-            //     res.json(backup)
-            // }else{
-            //     return res.status(404).json({ error: 'token not found' });
-            // }
+            axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/billing/${tic.mr_no}/${formattedDate}/${tic.clinic_code}`).then(async (data)=> {
+                if(data.data && data.data.status === 'Failure'){
+                    tic.update({
+                        stage: "out",
+                        doctor_id: doctor_id,
+                        clinic_time: new Date()
+                    })
+                    doc.update({
+                        current_patient: null
+                    })
+                    const backup = await TokenBackup.findOne({
+                        where: {ticket_no: tic.ticket_no}
+                    })
+                    if(backup){
+                        backup.update({
+                            stage: "out",
+                            doctor_id: doctor_id,
+                        clinic_time: new Date()
+                        })
+                        res.json(backup)
+                    }
+                }else if(data.data && data.data.status === "Billed"){
+                    tic.update({
+                        stage: "out",
+                        doctor_id: doctor_id,
+                        clinic_time: new Date()
+                    })
+                    doc.update({
+                        current_patient: null
+                    })
+                    const backup = await TokenBackup.findOne({
+                        where: {ticket_no: tic.ticket_no}
+                    })
+                    if(backup){
+                        backup.update({
+                            stage: "out",
+                            doctor_id: doctor_id,
+                        clinic_time: new Date()
+                        })
+                        res.json(backup)
+                    }
+                }else{
+                    tic.update({
+                        stage: "accounts",
+                        doctor_id: doctor_id,
+                        clinic_time: new Date()
+                    })
+                    doc.update({
+                        current_patient: null
+                    })
+                    const backup = await TokenBackup.findOne({
+                        where: {ticket_no: tic.ticket_no}
+                    })
+                    if(backup){
+                        backup.update({
+                            stage: "accounts",
+                            doctor_id: doctor_id,
+                        clinic_time: new Date()
+                        })
+                        res.json(backup)
+                    }
+                }
+            }).catch((error)=> {
+            return res.status(400).json({ error: error });
+        })
+        }
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
+// Finish Patient
+router.get('/verify_vipimo', async (req, res) => {
+    const {mr_no, clinic_code} = req.body
+    const now = new Date();
+
+    const formattedDate = now.getFullYear().toString() +
+    String(now.getMonth() + 1).padStart(2, '0') +
+    String(now.getDate()).padStart(2, '0');
+    try {
+        if(mr_no.trim() == ""){
+            return res.status(400).json({ error: 'mr no not provided' }); 
+        }else if(clinic_code.trim() == ""){
+            return res.status(400).json({ error: 'clinic code not provided' }); 
+        }else{
+            axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/billing/${mr_no}/${formattedDate}/${clinic_code}`).then((data)=> {
+                console.log('the data is ',data.data)
+                return res.json(data.data)
+            }).catch((error)=> {
+            return res.status(400).json({ error: error });
+        })
         }
     } catch (err) {
         //next({error: err})
