@@ -104,6 +104,7 @@ router.get('/get_user', async (req, res) => {
 router.put('/edit_user/:id', async (req, res) => {
     const id = req.params.id
     const {oldPass,newPass} = req.body
+    console.log(id)
     try {
         if(oldPass.trim()===""){
             return res.status(400).json({ error: 'the old password is empty' }); 
@@ -111,7 +112,7 @@ router.put('/edit_user/:id', async (req, res) => {
             return res.status(400).json({ error: 'the new password is empty' });
         }else{
             const user = await User.findOne({
-                where: {id}
+                where: {phone: id}
             })
             if(!user){
                 return res.status(400).json({ error: 'user not found' });

@@ -23,6 +23,7 @@ const uploads = require('./data/video')
 const currentClinic = require('./data/current_clinic')
 const speaker = require('./data/speaker')
 const analytics = require('./data/analytics')
+const newanalytics = require('./data/new_analysis')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -63,6 +64,7 @@ app.use('/active',active)
 app.use('/current_clinic',currentClinic)
 app.use('/speaker',speaker)
 app.use('/analytics',analytics)
+app.use('/new_analytics',newanalytics)
 app.use('/uploads',uploads)
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));

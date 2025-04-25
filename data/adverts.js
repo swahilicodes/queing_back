@@ -68,6 +68,23 @@ router.put('/delete_advert/:id', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+//edit advert
+router.put('/edit_advert/:id', async (req, res) => {
+    const { id,name,description } = req.body
+    try {
+        const service = await Advert.findByPk(id);
+        if (!service) {
+        return res.status(404).json({ error: 'advert not found' });
+        }
+        await service.update({
+            name: name,
+            description: description
+        });
+        res.json(service)
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+});
 router.put('/edit_counter/:id', async (req, res) => {
     const id = req.params.id
     const newData = req.body

@@ -118,13 +118,6 @@ router.post('/upload-video', async (req, res) => {
         return res.json(vid)
     }
   } catch (err) {
-    if (req.files) {
-      req.files.forEach(file => {
-        if (fs.existsSync(file.path)) {
-          fs.unlinkSync(file.path);
-        }
-      });
-    }
     res.status(400).json({ error: err.message });
   }
 });
