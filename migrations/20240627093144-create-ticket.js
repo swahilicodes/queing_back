@@ -101,6 +101,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      serving_id: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
@@ -118,6 +122,10 @@ module.exports = {
       name: {
         allowNull: true,
         type: Sequelize.STRING,
+      },
+      counter: {
+        allowNull: true,
+        type: Sequelize.INTEGER,
       },
       updatedAt: {
         allowNull: false,

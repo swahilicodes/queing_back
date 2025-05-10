@@ -51,7 +51,6 @@ router.post('/create_admin', async (req, res) => {
             }
         }
     } catch (err) {
-        //next({error: err})
         res.status(500).json({ error: err });
     }
 });

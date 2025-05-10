@@ -26,6 +26,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    device: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
   }, {
     sequelize,
     modelName: 'Active',

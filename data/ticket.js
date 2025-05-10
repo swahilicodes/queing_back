@@ -4,6 +4,7 @@ const router = express.Router();
 const { Op } = require('sequelize')
 const axios = require('axios')
 const cron = require('node-cron');
+const authMiddleware = require('../utils/authMiddleWare')
 
 
 router.post('/create_ticket', async (req, res) => {
@@ -329,14 +330,17 @@ router.get('/next_stage', async (req, res, next) => {
     }
 });
 // get all queues
-router.get('/priority', async (req, res, next) => {
-    const { ticket_no, data, stage, reason } = req.query
+router.get('/priority',authMiddleware, async (req, res, next) => {
+    const { ticket_no, data, stage, reason,counter } = req.query
+    const user = req.user
     if(ticket_no.trim() === ""){
         return res.status(400).json({ error: 'Token Number is required' });
     }else if(data.trim()===""){
         return res.status(400).json({ error: 'data is required' });
     }else if(stage.trim()===""){
         return res.status(400).json({ error: 'stage is required' });
+    }else if(!counter){
+        return res.status(400).json({ error: 'counter is required' });
     }else{
         try{
             const token = await Ticket.findOne({
@@ -348,26 +352,64 @@ router.get('/priority', async (req, res, next) => {
                         where: {serving: true,stage: stage}
                     })
                     if(toks){
-                        if(toks.ticket_no===ticket_no){
+                        if(toks.ticket_no===ticket_no && toks.serving_id === user.phone){
                             token.update({
-                                serving: false
+                                serving: false,
+                                serving_id: null
                             })
                             res.json(token)
+                        }else if(toks.ticket_no===ticket_no && toks.serving_id !== user.phone){
+                            token.update({
+                                serving: false,
+                                serving_id: null,
+                                counter: counter
+                            }) 
+                            res.json(token) 
                         }else{
-                            if(stage === "nurse_station"){
-                                token.update({
-                                    serving: true
-                                })
-                                res.json(token) 
+                            const match = await Ticket.findOne({
+                                where: {
+                                  serving: true,
+                                  stage: stage,
+                                  serving_id: user.phone  
+                                }
+                            })
+                            if(match){
+                                if(match.status !== "waiting") {
+                                    token.update({
+                                        serving: false,
+                                        serving_id: null 
+                                    })
+                                    res.json(token)   
+                                }else{
+                                    return res.status(400).json({ error: 'Finish Yours First' });
+                                }  
                             }else{
-                                return res.status(400).json({ error: 'Finish One first' });
+                                token.update({
+                                    serving: true,
+                                    serving_id: user.phone,
+                                    counter: counter
+                                })
+                                res.json(token)
                             }
                         }
                     }else{
-                        token.update({
-                            serving: true
+                        const match = await Ticket.findOne({
+                            where: {
+                              serving: true,
+                              stage: stage,
+                              serving_id: user.phone  
+                            }
                         })
-                        res.json(token)
+                        if(match){
+                            return res.status(400).json({ error: 'Finish Yours Fisrt' });  
+                        }else{
+                            token.update({
+                                serving: true,
+                                serving_id: user.phone,
+                                counter: counter
+                            })
+                            res.json(token)
+                        }
                     }
                 }else{
                     if(token.ticket_no===ticket_no && token.disabled===true){
@@ -699,106 +741,28 @@ router.get('/getClinicTickets', async (req, res, next) => {
     }catch(error){
         res.status(500).json({ error: error });
     }
-    // if(phone.trim() !== ''){ 
-    //     try {
-    //         const disabledToks = await Ticket.findAndCountAll({
-    //             where: {stage:stage,status:status,disabled: true,phone: {[Op.like]:`%${phone}%`},createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
-    //             offset: offset,
-    //             limit: 3,
-    //             order: [
-    //                 // ['disabled', 'DESC'],
-    //                 ['createdAt', 'ASC'],
-    //               ],
-    //         })
-    //         const normalToks = await Ticket.findAndCountAll({
-    //             where: {stage:stage,status:status,disabled: false,phone: {[Op.like]:`%${phone}%`},createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
-    //             offset: offset,
-    //             limit: 5,
-    //             order: [['createdAt', 'ASC']],
-    //         })
-    //         const disabledIds = disabledToks.rows.map(ticket => ticket.id);
-    //         const normalIds = normalToks.rows.map(ticket => ticket.id);
-    //         const otherToks = await Ticket.findAndCountAll({
-    //             where: {
-    //                 stage: stage,
-    //                 status: status,
-    //                 phone: {[Op.like]:`%${phone}%`},
-    //                 createdAt: {[Op.gte]: twelveHoursAgo},
-    //                 id: {
-    //                     [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
-    //                 },
-    //             },
-    //             offset: offset,
-    //             limit: 10 - (normalToks.rows.length+disabledToks.rows.length),
-    //             order: [['createdAt', 'ASC']],
-    //         });
-    //         const curr = [...disabledToks.rows,...normalToks.rows, ...otherToks.rows]
-    //         const counters = await Counter.findAll()
-    //         const result = curr.map(cu => {
-    //             const counter = counters.find(item => item.service === cu.stage)
-    //             return {
-    //                 token: cu,
-    //                 counter: counter
-    //             }
-    //         })
-    //         res.json({
-    //             data: result,
-    //             totalItems: curr.count,
-    //             totalPages: Math.ceil(curr.count / pageSize),
-    //         })
-    //     } catch (err) {
-    //         res.status(500).json({ error: err });
-    //     } 
-    // }else{
-    //     try {
-    //         const disabledToks = await Ticket.findAndCountAll({
-    //             where: {stage:stage,status:status,disabled: true,createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
-    //             offset: offset,
-    //             limit: 3,
-    //             order: [
-    //                 // ['disabled', 'DESC'],
-    //                 ['createdAt', 'ASC'],
-    //               ],
-    //         })
-    //         const normalToks = await Ticket.findAndCountAll({
-    //             where: {stage:stage,status:status,disabled: false,createdAt: {[Op.gte]: twelveHoursAgo,clinic_code: clinic_code}},
-    //             offset: offset,
-    //             limit: 5,
-    //             order: [['createdAt', 'ASC']],
-    //         })
-    //         const disabledIds = disabledToks.rows.map(ticket => ticket.id);
-    //         const normalIds = normalToks.rows.map(ticket => ticket.id);
-    //         const otherToks = await Ticket.findAndCountAll({
-    //             where: {
-    //                 stage: stage,
-    //                 status: status,
-    //                 createdAt: {[Op.gte]: twelveHoursAgo},
-    //                 id: {
-    //                     [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
-    //                 },
-    //             },
-    //             offset: offset,
-    //             limit: 10 - (normalToks.rows.length+disabledToks.rows.length),
-    //             order: [['createdAt', 'ASC']],
-    //         });
-    //         const curr = [...disabledToks.rows,...normalToks.rows, ...otherToks.rows]
-    //         const counters = await Counter.findAll()
-    //         const result = curr.map(cu => {
-    //             const counter = counters.find(item => item.service === cu.stage)
-    //             return {
-    //                 token: cu,
-    //                 counter: counter
-    //             }
-    //         })
-    //         res.json({
-    //             data: result,
-    //             totalItems: curr.count,
-    //             totalPages: Math.ceil(curr.count / pageSize),
-    //         })
-    //     } catch (err) {
-    //         res.status(500).json({ error: err });
-    //     }
-    // }
+});
+// clinic length 
+router.get('/get_clinic_length', async (req, res, next) => {
+    const status = req.query.status
+    const stage = req.query.stage
+    const clinic_code = req.query.clinic_code
+    const current_clinic = req.query.current_clinic
+    try{
+        if(current_clinic !== '0'){
+            const tickets = await Ticket.findAll({
+                where: {stage,status,clinic_code: current_clinic}
+            })
+            res.json(tickets)
+        }else{
+            const tickets = await Ticket.findAll({
+                where: {stage,status,clinic_code: {[Op.in]: clinic_code}}
+            })
+            res.json(tickets)
+        }
+    }catch(error){
+        res.status(500).json({ error: error });
+    }
 });
 // get queues counter
 router.get('/getTicketTotal', async (req, res, next) => {
@@ -1097,8 +1061,6 @@ cron.schedule('*/5 * * * * *', async () => {
         try{
             const response = await axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${ticket.mr_no}`);
             if(response.data.status === 201 && response.data.data.consStatus==="Not Paid"){
-                //console.log('this token is not paid',ticket.mr_no)
-                //return
             }else if(response.data.status===200 && response.data.data.consStatus==="Paid"){
                 ticket.update({
                     paid: true,

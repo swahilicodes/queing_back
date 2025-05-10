@@ -1,13 +1,14 @@
 const express = require('express')
 const router = express.Router();
-const { Play } = require('../models/index')
+const { Audio } = require('../models/index')
 const cron = require('node-cron')
 const {Op} = require('sequelize')
+const Sequelize = require('sequelize')
 
 router.post("/create_speaker", async (req,res)=> {
 const { ticket_no, counter, stage, station } = req.body
 try{
-    const plai = await Play.create({
+    const plai = await Audio.create({
         ticket_no,
         stage,
         station,
@@ -23,10 +24,10 @@ router.get("/get_speakers", async (req,res)=> {
 const { station } = req.query
 try{
     if(station.trim()===""){
-        const speaks = await Play.findAll()
+        const speaks = await Audio.findAll()
         res.json(speaks)
     }else{
-        const speaks = await Play.findAll({
+        const speaks = await Audio.findAll({
             where: {station: station}
         })
         res.json(speaks)
@@ -35,29 +36,23 @@ try{
     res.status(500).json({error: error})
 }
 })
-cron.schedule('*/15 * * * * *', async () => {
-    try {
-        const plays = await Play.findAll();
-        const activeStations = new Set();
-        for (const play of plays) {
-          if (play.talking) {
-            activeStations.add(play.station);
-          }
+// get all speakers
+router.post("/delete_play", async (req,res)=> {
+const { id } = req.body
+try{
+    if(!id){
+        res.status(400).json({error: "id is required"})
+    }else{
+        const play = await Audio.findOne({
+            where: {id}
+        })
+        if(play){
+          await play.destroy()
+          res.json(play)
         }
-        for (const play of plays) {
-          if (!activeStations.has(play.station)) {
-            play.talking = true;
-            await play.save();
-            console.log(`Updated play with ID: ${play.id} from station: ${play.station}`);
-            activeStations.add(play.station);
-            setTimeout(()=> {
-                play.destroy()
-                console.log(`${play.id} deleted successfully`)
-            },60000)
-          }
-        }
-    } catch (error) {
-      console.error('Error running the cron job:', error);
     }
-  });
+}catch(error){
+    res.status(500).json({error: error})
+}
+})
 module.exports = router

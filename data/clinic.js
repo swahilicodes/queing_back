@@ -75,45 +75,54 @@ router.get("/get_display_clinics", async (req, res) => {
         res.status(500).json({ error: err });
     }
   });
-// recreate clinics
-cron.schedule('0 0 * * *', async () => {
+
+const job = cron.schedule('0 0 * * *', async () => {
+    console.log('Cron job triggered at', new Date().toISOString());
+  
     try {
-        // Fetch data from the API
-        const response = await axios.get('http://192.168.235.65/dev/jeeva_api/swagger/clinics');
-    
-        if (response.data.status !== 200 || !Array.isArray(response.data.data)) {
-          console.error('Unexpected API response format:', response.data);
-          return;
-        }
-    
-        const apiClinics = response.data.data;
-    
-        // Fetch existing clinics from the database
-        const dbClinics = await Clinic.findAll({
-          attributes: ['clinicicode', 'cliniciname', 'status', 'deptcode'],
-          raw: true,
-        });
-    
-        // Find items that are in the API response but not in the database
-        const reserves = apiClinics.filter(apiClinic => {
-          return !dbClinics.some(dbClinic => dbClinic.clinicicode === apiClinic.clinicode);
-        });
-    
-        // Insert the new records into the database
-        if (reserves.length > 0) {
-          await Clinic.bulkCreate(reserves.map(item => ({
-            cliniciname: item.clinicname,
-            clinicicode: item.clinicode,
-            status: item.status,
-            deptcode: item.deptcode,
-          })));
-          console.log(`${reserves.length} new clinics added to the database.`);
-        } else {
-          console.log('No new clinics to add.');
-        }
-      } catch (error) {
-        console.error('Error fetching or syncing clinics:', error);
+      // Fetch data from the API
+      const response = await axios.get('http://192.168.235.65/dev/jeeva_api/swagger/clinics');
+  
+      if (response.data.status !== 200 || !Array.isArray(response.data.data)) {
+        console.error('Unexpected API response format:', response.data);
+        return;
       }
-});
+  
+      const apiClinics = response.data.data;
+  
+      // Fetch existing clinics from the database
+      const dbClinics = await Clinic.findAll({
+        attributes: ['clinicicode', 'cliniciname', 'status', 'deptcode'],
+        raw: true,
+      });
+  
+      // Find clinics from API not in the DB
+      const reserves = apiClinics.filter(apiClinic => {
+        return !dbClinics.some(dbClinic => dbClinic.clinicicode === apiClinic.clinicode);
+      });
+  
+      // Insert new records
+      if (reserves.length > 0) {
+        await Clinic.bulkCreate(reserves.map(item => ({
+          cliniciname: item.clinicname,
+          clinicicode: item.clinicode,
+          status: item.status,
+          deptcode: item.deptcode,
+        })));
+        console.log(`${reserves.length} new clinics added to the database.`);
+      } else {
+        console.log('No new clinics to add.');
+      }
+  
+    } catch (error) {
+      console.error('Error in cron job:', error.message);
+    }
+  }, {
+    scheduled: true, // ensures job is scheduled immediately
+    timezone: "Africa/Dar_es_Salaam" // optional: set your local timezone
+  });
+  
+  // Start the cron job explicitly (optional if `scheduled: true`)
+  job.start();
 
 module.exports = router;

@@ -27,14 +27,13 @@ const newanalytics = require('./data/new_analysis')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
-const corsOptions ={
-  // origin:'https://qms.mloganzila.or.tz', 
-  origin:'*', 
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials:true,            //access-control-allow-credentials:true
-  optionSuccessStatus:200,
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}
+const corsOptions = {
+  origin: "*", // Must match your frontend URL
+  credentials: true,
+  optionsSuccessStatus: 200,
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control'],
+  methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
+};
 
 
 const app = express();

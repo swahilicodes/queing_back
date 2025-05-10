@@ -3,7 +3,8 @@ const { Dokta, User, Counter, Patient, Ticket, TokenBackup } = require('../model
 const router = express.Router();
 const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
-const axios = require('axios')
+const axios = require('axios');
+const authMiddleware = require('../utils/authMiddleWare');
 
 
 router.post('/create_dokta', async (req, res) => {
@@ -66,9 +67,34 @@ router.get('/get_doktas', async (req, res) => {
     const pageSize = parseInt(req.query.pageSize) || 10;
     const clinic_code = req.query.clinic_code;
     const offset = (page - 1) * pageSize;
+    console.log(page,clinic_code)
     try {
         const curr = await Dokta.findAndCountAll({
-            where: {clinic_code},
+            //where: {clinic_code},
+            offset: offset,
+            limit: pageSize,
+            order: [['id', 'ASC']]
+        })
+        console.log(curr)
+        res.json({
+            data: curr.rows,
+            totalItems: curr.count,
+            totalPages: Math.ceil(curr.count / pageSize),
+          });
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
+// get clinic doctors
+router.get('/get_clinic_doktas', async (req, res) => {
+    const {clinics} = req.query
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+    const offset = (page - 1) * pageSize;
+    try {
+        const curr = await Dokta.findAndCountAll({
+            where: {clinic_code: {[Op.in]:clinics}},
             offset: offset,
             limit: pageSize,
             order: [['id', 'ASC']]
@@ -83,6 +109,70 @@ router.get('/get_doktas', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+// get clinic doctors
+router.get('/get_all_doktas', async (req, res) => {
+    try {
+        const curr = await Dokta.findAll()
+        res.json(curr);
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
+// get clinic doctors
+router.get('/get_dokta_patients', async (req, res) => {
+    const {id} = req.query
+    try {
+        const curr = await Ticket.findAll({
+            where: {doctor_id: id},
+            order: [['id', 'ASC']]
+        })
+        res.json(curr);
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
+// assign doctor
+router.post('/assign_doctor', async (req, res) => {
+    const {doctor_id,patient_id} = req.body
+    try {
+        const curr = await Ticket.findOne({
+            where: {id: patient_id}
+        })
+        if(!curr){
+            res.status(400).json({error: "patient not found"})
+        }else{
+            await curr.update({
+                doctor_id: doctor_id
+            })
+            res.json(curr)
+        }
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
+// get doctor patients
+router.get('/get_doc_patients',authMiddleware, async (req, res) => {
+    const {status} = req.query
+    const user = req.user
+    try {
+        const current = await Dokta.findOne({
+            where: {phone: user.phone}
+        })
+        if(current){
+            const pats = await Ticket.findAll({
+                where: {doctor_id: current.id,status: status,stage: "nurse_station"}
+            })
+            res.json(pats)
+        }
+    } catch (err) {
+        //next({error: err})
+        res.status(500).json({ error: err });
+    }
+});
+
 router.get('/get_free_doktas', async (req, res) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
@@ -149,12 +239,13 @@ router.post('/finish_patient', async (req, res) => {
     const formattedDate = now.getFullYear().toString() +
     String(now.getMonth() + 1).padStart(2, '0') +
     String(now.getDate()).padStart(2, '0');
+    console.log(doctor_id,patient_id)
     try {
         const doc = await Dokta.findOne({
-            where: {phone: doctor_id}
+            where: {id: doctor_id}
         });
         const tic = await Ticket.findOne({
-            where: {mr_no: patient_id, stage: "clinic"}
+            where: {mr_no: patient_id, stage: "nurse_station"}
         });
         if (!doc) {
         return res.status(404).json({ error: 'doctor not found' });
@@ -164,40 +255,45 @@ router.post('/finish_patient', async (req, res) => {
             axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/billing/${tic.mr_no}/${formattedDate}/${tic.clinic_code}`).then(async (data)=> {
                 if(data.data && data.data.status === 'Failure'){
                     tic.update({
-                        stage: "out",
+                        stage: "clinic",
                         doctor_id: doctor_id,
-                        clinic_time: new Date()
+                        clinic_time: new Date(),
+                        serving: false
                     })
                     doc.update({
-                        current_patient: null
+                        current_patient: null,
                     })
                     const backup = await TokenBackup.findOne({
                         where: {ticket_no: tic.ticket_no}
                     })
                     if(backup){
                         backup.update({
-                            stage: "out",
+                            stage: "clinic",
                             doctor_id: doctor_id,
-                        clinic_time: new Date()
+                             clinic_time: new Date(),
+                             serving: false
                         })
                         res.json(backup)
                     }
                 }else if(data.data && data.data.status === "Billed"){
                     tic.update({
-                        stage: "out",
+                        stage: "clinic",
                         doctor_id: doctor_id,
-                        clinic_time: new Date()
+                        clinic_time: new Date(),
+                        serving: false
                     })
                     doc.update({
-                        current_patient: null
+                        current_patient: null,
+                        serving: false
                     })
                     const backup = await TokenBackup.findOne({
                         where: {ticket_no: tic.ticket_no}
                     })
                     if(backup){
                         backup.update({
-                            stage: "out",
+                            stage: "clinic",
                             doctor_id: doctor_id,
+                            serving: false,
                         clinic_time: new Date()
                         })
                         res.json(backup)
@@ -206,7 +302,8 @@ router.post('/finish_patient', async (req, res) => {
                     tic.update({
                         stage: "accounts",
                         doctor_id: doctor_id,
-                        clinic_time: new Date()
+                        clinic_time: new Date(),
+                        serving: false
                     })
                     doc.update({
                         current_patient: null

@@ -60,7 +60,8 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     }else{
         res.json({
           message: 'File uploaded successfully',
-          url: `http://192.168.30.245:5000/public/${req.file.filename}`
+          url: `http://192.168.30.246:5000/public/${req.file.filename}`
+          //url: `http://localhost:5000/public/${req.file.filename}`
         });
     }
   } catch (err) {

@@ -102,7 +102,15 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true,
     },
+    counter: {
+      allowNull: true,
+      type: DataTypes.INTEGER,
+    },
     doctor_id: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    serving_id: {
       type: DataTypes.STRING,
       allowNull: true,
     },
