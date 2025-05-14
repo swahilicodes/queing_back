@@ -231,102 +231,226 @@ router.put('/delete_dokta/:id', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
-// Finish Patient
+// // Finish Patient
+// router.post('/finish_patient', async (req, res) => {
+//     const {doctor_id, patient_id} = req.body
+//     const now = new Date();
+
+//     const formattedDate = now.getFullYear().toString() +
+//     String(now.getMonth() + 1).padStart(2, '0') +
+//     String(now.getDate()).padStart(2, '0');
+//     console.log(doctor_id,patient_id)
+//     try {
+//         const doc = await Dokta.findOne({
+//             where: {id: doctor_id}
+//         });
+//         const tic = await Ticket.findOne({
+//             where: {mr_no: patient_id, stage: "nurse_station"}
+//         });
+//         if (!doc) {
+//         return res.status(404).json({ error: 'doctor not found' });
+//         }else if (!tic){
+//             return res.status(404).json({ error: 'patient not found' });
+//         }else{
+//             axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/billing/${tic.mr_no}/${formattedDate}/${tic.clinic_code}`).then(async (data)=> {
+//                 if(data.data && data.data.status == 'Failure' && data.data.consStatus == "No Patient Data"){
+//                     tic.update({
+//                         stage: "clinic",
+//                         doctor_id: doctor_id,
+//                         clinic_time: new Date(),
+//                         serving: false
+//                     })
+//                     doc.update({
+//                         current_patient: null,
+//                     })
+//                     const backup = await TokenBackup.findOne({
+//                         where: {ticket_no: tic.ticket_no}
+//                     })
+//                     if(backup){
+//                         backup.update({
+//                             stage: "clinic",
+//                             doctor_id: doctor_id,
+//                              clinic_time: new Date(),
+//                              serving: false
+//                         })
+//                         res.json(backup)
+//                     }
+//                 }else if(data.data && data.data.status == "Billed"){
+//                     tic.update({
+//                         stage: "clinic",
+//                         doctor_id: doctor_id,
+//                         clinic_time: new Date(),
+//                         serving: false
+//                     })
+//                     doc.update({
+//                         current_patient: null,
+//                         serving: false,
+//                         stage: "clinic",
+//                     })
+//                     const backup = await TokenBackup.findOne({
+//                         where: {ticket_no: tic.ticket_no}
+//                     })
+//                     if(backup){
+//                         backup.update({
+//                             stage: "clinic",
+//                             doctor_id: doctor_id,
+//                             serving: false,
+//                             clinic_time: new Date()
+//                         })
+//                         res.json(backup)
+//                     }
+//                 }else{
+//                     tic.update({
+//                         stage: "accounts",
+//                         doctor_id: doctor_id,
+//                         clinic_time: new Date(),
+//                         serving: false
+//                     })
+//                     doc.update({
+//                         current_patient: null
+//                     })
+//                     const backup = await TokenBackup.findOne({
+//                         where: {ticket_no: tic.ticket_no}
+//                     })
+//                     if(backup){
+//                         backup.update({
+//                             stage: "accounts",
+//                             doctor_id: doctor_id,
+//                         clinic_time: new Date()
+//                         })
+//                         res.json(backup)
+//                     }
+//                 }
+//             }).catch((error)=> {
+//             return res.status(400).json({ error: error });
+//         })
+//         }
+//     } catch (err) {
+//         //next({error: err})
+//         res.status(500).json({ error: err });
+//     }
+// });
+
 router.post('/finish_patient', async (req, res) => {
-    const {doctor_id, patient_id} = req.body
+    const { doctor_id, patient_id } = req.body;
     const now = new Date();
 
-    const formattedDate = now.getFullYear().toString() +
-    String(now.getMonth() + 1).padStart(2, '0') +
-    String(now.getDate()).padStart(2, '0');
-    console.log(doctor_id,patient_id)
+    const formattedDate =
+        now.getFullYear().toString() +
+        String(now.getMonth() + 1).padStart(2, '0') +
+        String(now.getDate()).padStart(2, '0');
+
     try {
         const doc = await Dokta.findOne({
-            where: {id: doctor_id}
+            where: { id: doctor_id },
         });
         const tic = await Ticket.findOne({
-            where: {mr_no: patient_id, stage: "nurse_station"}
+            where: { mr_no: patient_id, stage: 'nurse_station' },
         });
+
         if (!doc) {
-        return res.status(404).json({ error: 'doctor not found' });
-        }else if (!tic){
+            return res.status(404).json({ error: 'doctor not found' });
+        }
+        if (!tic) {
             return res.status(404).json({ error: 'patient not found' });
-        }else{
-            axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/billing/${tic.mr_no}/${formattedDate}/${tic.clinic_code}`).then(async (data)=> {
-                if(data.data && data.data.status === 'Failure'){
-                    tic.update({
-                        stage: "clinic",
-                        doctor_id: doctor_id,
-                        clinic_time: new Date(),
-                        serving: false
-                    })
-                    doc.update({
-                        current_patient: null,
-                    })
-                    const backup = await TokenBackup.findOne({
-                        where: {ticket_no: tic.ticket_no}
-                    })
-                    if(backup){
-                        backup.update({
-                            stage: "clinic",
-                            doctor_id: doctor_id,
-                             clinic_time: new Date(),
-                             serving: false
-                        })
-                        res.json(backup)
-                    }
-                }else if(data.data && data.data.status === "Billed"){
-                    tic.update({
-                        stage: "clinic",
-                        doctor_id: doctor_id,
-                        clinic_time: new Date(),
-                        serving: false
-                    })
-                    doc.update({
-                        current_patient: null,
-                        serving: false
-                    })
-                    const backup = await TokenBackup.findOne({
-                        where: {ticket_no: tic.ticket_no}
-                    })
-                    if(backup){
-                        backup.update({
-                            stage: "clinic",
-                            doctor_id: doctor_id,
-                            serving: false,
-                        clinic_time: new Date()
-                        })
-                        res.json(backup)
-                    }
-                }else{
-                    tic.update({
-                        stage: "accounts",
-                        doctor_id: doctor_id,
-                        clinic_time: new Date(),
-                        serving: false
-                    })
-                    doc.update({
-                        current_patient: null
-                    })
-                    const backup = await TokenBackup.findOne({
-                        where: {ticket_no: tic.ticket_no}
-                    })
-                    if(backup){
-                        backup.update({
-                            stage: "accounts",
-                            doctor_id: doctor_id,
-                        clinic_time: new Date()
-                        })
-                        res.json(backup)
-                    }
-                }
-            }).catch((error)=> {
-            return res.status(400).json({ error: error });
-        })
+        }
+
+        const response = await axios.get(
+            `http://192.168.235.65/dev/jeeva_api/swagger/billing/${"M85-51-780"}/${formattedDate}/${tic.clinic_code}`
+        );
+
+        // Log the API response for debugging
+        //console.log('API Response:', JSON.stringify(response.data, null, 2));
+
+        const apiData = response.data.data;
+
+        // Handle the cases explicitly
+        if (apiData.status === 'Billed') {
+            // Case 1: Billed → stage: "clinic"
+            await tic.update({
+                stage: 'clinic',
+                doctor_id: doctor_id,
+                clinic_time: new Date(),
+                serving: false,
+            });
+            await doc.update({
+                current_patient: null,
+                serving: false,
+                stage: 'clinic',
+            });
+
+            const backup = await TokenBackup.findOne({
+                where: { ticket_no: tic.ticket_no },
+            });
+            if (backup) {
+                await backup.update({
+                    stage: 'clinic',
+                    doctor_id: doctor_id,
+                    clinic_time: new Date(),
+                    serving: false,
+                });
+                return res.json(backup);
+            }
+            return res.json({ message: 'Updated successfully, no backup found' });
+        } else if (
+            apiData.status === 'Failure' &&
+            apiData.consStatus === 'No Patient Data'
+        ) {
+            // Case 2: No Patient Data → stage: "clinic"
+            await tic.update({
+                stage: 'clinic',
+                doctor_id: doctor_id,
+                clinic_time: new Date(),
+                serving: false,
+            });
+            await doc.update({
+                current_patient: null,
+                serving: false,
+                stage: 'clinic',
+            });
+
+            const backup = await TokenBackup.findOne({
+                where: { ticket_no: tic.ticket_no },
+            });
+            if (backup) {
+                await backup.update({
+                    stage: 'clinic',
+                    doctor_id: doctor_id,
+                    clinic_time: new Date(),
+                    serving: false,
+                });
+                return res.json(backup);
+            }
+            return res.json({ message: 'Updated successfully, no backup found' });
+        } else {
+            // Case 3: Any other status (e.g., "null") → stage: "accounts"
+            await tic.update({
+                stage: 'accounts',
+                doctor_id: doctor_id,
+                clinic_time: new Date(),
+                serving: false,
+            });
+            await doc.update({
+                current_patient: null,
+            });
+
+            const backup = await TokenBackup.findOne({
+                where: { ticket_no: tic.ticket_no },
+            });
+            if (backup) {
+                await backup.update({
+                    stage: 'accounts',
+                    doctor_id: doctor_id,
+                    clinic_time: new Date(),
+                    serving: false,
+                });
+                return res.json(backup);
+            }
+            return res.json({ message: 'Updated successfully, no backup found' });
         }
     } catch (err) {
-        //next({error: err})
-        res.status(500).json({ error: err });
+        console.error('Error:', err);
+        res.status(500).json({ error: err.message });
     }
 });
 // Finish Patient
@@ -355,5 +479,88 @@ router.get('/verify_vipimo', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+
+// Edit doctor
+router.put('/edit_dokta/:id', async (req, res) => {
+  const id = req.params.id;
+  const newData = req.body;
+
+  try {
+    const doctor = await Dokta.findOne({ where: { id } });
+    if (!doctor) {
+      return res.status(404).json({ error: "Doctor not found" });
+    }
+
+    const user = await User.findOne({ where: { phone: doctor.phone } });
+    if (!user) {
+      return res.status(404).json({ error: "User linked to doctor not found" });
+    }
+
+    const hashed = await bcrypt.hash(user.phone, 6);
+
+    // Update user
+    await user.update({
+      name: newData.fields.name || user.name,
+      service: newData.fields.service || user.service,
+      counter: newData.fields.room || user.counter,
+      role: newData.fields.role || user.role,
+      password: newData.fields.ispass === "true" ? hashed : user.password
+    });
+
+    // Update doctor
+    await doctor.update({
+      name: newData.fields.name || doctor.name,
+      service: newData.fields.service || doctor.service,
+      room: newData.fields.room || doctor.counter,
+      clinic: newData.fields.clinic || doctor.clinic,
+      clinic_code: newData.fields.clinic_code || doctor.clinic_code,
+      role: newData.fields.role || doctor.role,
+      password: newData.fields.ispass === "true" ? hashed : doctor.password
+    });
+
+    // Reload doctor to get latest changes
+    await doctor.reload();
+
+    res.json({ message: "Doctor and user updated successfully", doctor });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error", details: err.message });
+  }
+});
+
+// router.post("/edit_doctor",authMiddleware, async (req,res)=> {
+//     const {name, clinic,clinic_code, room} = req.body
+//     if(name.trim()===""){
+//         return res.status(400).json({error: "name is empty"})
+//     }else if(clinic.trim()===""){
+//         return res.status(400).json({error: "clinic is empty"})
+//     }else if(clinic_code.trim()===""){
+//         return res.status(400).json({error: "clinic code is empty"})
+//     }else if(room.trim()===""){
+//         return res.status(400).json({error: "room is empty"})
+//     }else{
+//         const user = req.user
+//         const new_user = await User.findOne({
+//             where: {phone: user.phone}
+//         })
+//         const new_doc = await Dokta.findOne({
+//             where: {phone: user.phone}
+//         })
+//         if(!new_user && ! new_doc){
+//          return res.status(400).json({error: "user not found"})   
+//         }else{
+//            new_user.update({
+//                 name,
+//                 counter: room
+//             })
+//             new_doc.update({
+//                 name,
+//                 clinic,
+//                 clinic_code,
+//                 room,
+//             })
+//             res.json(new_doc)
+//         }
+//     }
+// })
 
 module.exports = router;

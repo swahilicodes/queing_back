@@ -130,70 +130,52 @@ router.put('/edit_counter/:id', async (req, res) => {
         res.status(500).json({ error: err });
     }
 });
+
+// Edit doctor
 router.put('/edit_doctor/:id', async (req, res) => {
-    const id = req.params.id
-    const newData = req.body
-    try {
-        if(!newData.fields.name.trim()===""){
-            return res.status(404).json({ error: 'name is empty' }); 
-        }else{
-            const service = await Doctor.findByPk(id);
-            if (!service) {
-            return res.status(404).json({ error: 'service not found' });
-            }else{
-                const user = await User.findOne({
-                    where: {phone: service.phone}
-                });
-                const counter = await Counter.findOne({
-                    where: {name: newData.fields.service}
-                });
-                if(!user || ! counter){
-                    return res.status(404).json({ error: 'user not found' });  
-                }else{
-                    const pass = await bcrypt.hash(newData.fields.phone,6)
-                    if(newData.fields.phone === user.phone){
-                        await service.update({
-                            name: newData.fields.name,
-                            phone: newData.fields.phone,
-                            service: newData.fields.service,
-                            room: newData.fields.service !=="clinic"?counter.namba:newData.fields.counter,
-                            role:newData.fields.service==="meds"?"medical_recorder":newData.fields.service==="accounts"?"accountant":newData.fields.service==="payment"?"cashier":"doctor",
-                        });
-                        await user.update({
-                            name: newData.fields.name,
-                            phone: newData.fields.phone,
-                            service: newData.fields.service,
-                            counter: newData.fields.service !=="clinic"?counter.namba:newData.fields.counter,
-                            role:newData.fields.service==="meds"?"medical_recorder":newData.fields.service==="accounts"?"accountant":newData.fields.service==="payment"?"cashier":"doctor",
-                        });
-                        res.json(service);
-                    }else{
-                        await service.update({
-                            name: newData.fields.name,
-                            phone: newData.fields.phone,
-                            service: newData.fields.service,
-                            room: newData.fields.service !=="clinic"?counter.namba:newData.fields.counter,
-                            password: pass,
-                            role:newData.fields.service==="meds"?"medical_recorder":newData.fields.service==="accounts"?"accountant":newData.fields.service==="payment"?"cashier":"doctor",
-                        });
-                        await user.update({
-                            name: newData.fields.name,
-                            phone: newData.fields.phone,
-                            service: newData.fields.service,
-                            counter: newData.fields.service !=="clinic"?counter.namba:newData.fields.counter,
-                            password: pass,
-                            role:newData.fields.service==="meds"?"medical_recorder":newData.fields.service==="accounts"?"accountant":newData.fields.service==="payment"?"cashier":"doctor",
-                        });
-                        //res.status(204).end();
-                        res.json(service);
-                    }
-                }
-            }   
-        }
-    } catch (err) {
-        //next({error: err})
-        res.status(500).json({ error: err });
+  const id = req.params.id;
+  const newData = req.body;
+
+  try {
+    const doctor = await Doctor.findOne({ where: { id } });
+    if (!doctor) {
+      return res.status(404).json({ error: "Doctor not found" });
     }
+
+    const user = await User.findOne({ where: { phone: doctor.phone } });
+    if (!user) {
+      return res.status(404).json({ error: "User linked to doctor not found" });
+    }
+
+    const hashed = await bcrypt.hash(user.phone, 6);
+
+    // Update user
+    await user.update({
+      name: newData.fields.name || user.name,
+      service: newData.fields.service || user.service,
+      counter: newData.fields.counter || user.counter,
+      role: newData.fields.role || user.role,
+      password: newData.fields.ispass === "true" ? hashed : user.password
+    });
+
+    // Update doctor
+    await doctor.update({
+      name: newData.fields.name || doctor.name,
+      service: newData.fields.service || doctor.service,
+      counter: newData.fields.counter || doctor.counter,
+      clinic: newData.fields.clinic || doctor.clinic,
+      clinic_code: newData.fields.clinic_code || doctor.clinic_code,
+      role: newData.fields.role || doctor.role,
+      password: newData.fields.ispass === "true" ? hashed : doctor.password
+    });
+
+    // Reload doctor to get latest changes
+    await doctor.reload();
+
+    res.json({ message: "Doctor and user updated successfully", doctor });
+  } catch (err) {
+    res.status(500).json({ error: "Internal server error", details: err.message });
+  }
 });
 
 // get doctor patient

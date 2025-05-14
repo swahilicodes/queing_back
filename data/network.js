@@ -121,12 +121,12 @@ router.post("/create_update", async (req, res) => {
         clinics: clinics
        })
   }else{
-    device.update({
-      macAddress: macAddress,
-      deviceName: deviceName,
-      deviceModel: deviceModel,
-      manufucturer: manufacturer 
-    })
+    // device.update({
+    //   macAddress: macAddress,
+    //   deviceName: deviceName,
+    //   deviceModel: deviceModel,
+    //   manufucturer: manufacturer 
+    // })
     const clinics = await AttendClinic.findAll({
       where: {attendant_id: device.macAddress}
   })
@@ -140,6 +140,7 @@ router.post("/create_update", async (req, res) => {
       role: device.role,
       createdAt: device.createdAt,
       updatedAt: device.updatedAt,
+      window: device.window,
       clinics: clinics
      })
   }
@@ -168,6 +169,7 @@ router.get("/get_devices", async (req, res) => {
           manufucturer: item.manufucturer,
           default_page: item.default_page,
           role: item.role,
+          window: item.window,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
           clinics: clinica
@@ -185,7 +187,7 @@ router.get("/get_devices", async (req, res) => {
 });
 // edit device
 router.get("/edit_device", async (req, res) => {
-  const { page, id, deviceName, deviceModel, manufucturer } = req.query
+  const { page, id, deviceName, deviceModel, manufucturer,window } = req.query
   try {
     if(id.trim()===""){
       res.status(400).json({error: "id is empty"})
@@ -198,7 +200,8 @@ router.get("/edit_device", async (req, res) => {
           default_page: page,
           deviceModel: deviceModel,
           deviceName: deviceName,
-          manufucturer: manufucturer
+          manufucturer: manufucturer,
+          window: window
         })
         res.json(div)
       }else{
@@ -227,6 +230,16 @@ router.get("/delete_device", async (req, res) => {
         res.status(400).json({error: "device not found"})
       }
     }
+  } catch (err) {
+      //next({error: err})
+      res.status(500).json({ error: err });
+  }
+});
+// get all device
+router.get("/get_all_devices", async (req, res) => {
+  try {
+    const devices = await Device.findAll()
+    res.json(devices)
   } catch (err) {
       //next({error: err})
       res.status(500).json({ error: err });

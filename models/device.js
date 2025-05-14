@@ -38,6 +38,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: true
     },
+    window: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
     default_page: {
       type: DataTypes.STRING,
       allowNull: true

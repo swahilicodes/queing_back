@@ -63,7 +63,7 @@ module.exports = {
       },
       disabled: {
         type: Sequelize.BOOLEAN,
-        allowNull: false
+        allowNull: true
       },
       phone: {
         type: Sequelize.STRING,

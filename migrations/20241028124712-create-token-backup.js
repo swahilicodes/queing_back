@@ -54,11 +54,12 @@ module.exports = {
       },
       disability: {
         type: Sequelize.STRING,
+        allowNull: true,
         defaultValue: null
       },
       disabled: {
         type: Sequelize.BOOLEAN,
-        allowNull: false
+        allowNull: true
       },
       phone: {
         type: Sequelize.STRING,

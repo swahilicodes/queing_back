@@ -61,7 +61,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     disabled: {
       type: DataTypes.BOOLEAN,
-      allowNull: false
+      allowNull: true
     },
     dateTime: {
       type: DataTypes.DATE,
@@ -74,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     status: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     phone: {
       type: DataTypes.STRING,

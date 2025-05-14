@@ -54,7 +54,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     disabled: {
       type: DataTypes.BOOLEAN,
-      allowNull: false
+      allowNull: true
     },
     dateTime: {
       type: DataTypes.DATE,

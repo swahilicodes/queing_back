@@ -1,5 +1,5 @@
 const express = require('express');
-const { Ticket, Attendant, Counter, Dokta, TokenBackup } = require('../models/index')
+const { Ticket, Attendant, Counter, Dokta, TokenBackup,InTime } = require('../models/index')
 const router = express.Router();
 const { Op } = require('sequelize')
 const axios = require('axios')
@@ -7,8 +7,40 @@ const cron = require('node-cron');
 const authMiddleware = require('../utils/authMiddleWare')
 
 
+cron.schedule('*/15 * * * * *', async () => {
+  try {
+    const time = await InTime.findOne({
+        order: [['createdAt', 'ASC']]
+    })
+    // Get current time minus 10 minutes
+    const tenMinutesAgo = new Date(Date.now() - time.time * 60 * 1000);
+    // Find all tickets with category 'insurance' and createdAt older than 10 minutes
+    const tickets = await Ticket.findAll({
+      where: {
+        category: 'insurance',
+        createdAt: {
+          [Op.lt]: tenMinutesAgo
+        },
+        status: {
+          [Op.ne]: 'waiting' // Only update if it's not already waiting
+        }
+      }
+    });
+
+    // Loop through tickets and update their status
+    for (const ticket of tickets) {
+      ticket.status = 'waiting';
+      await ticket.save();
+      console.log(`Updated ticket ID ${ticket.id} to status 'waiting'`);
+    }
+
+  } catch (error) {
+    console.error('Error in cron job:', error);
+  }
+});
+
 router.post('/create_ticket', async (req, res) => {
-    const { phone,disability} = req.body;
+    const { phone,category} = req.body;
     let ticket_no
     let back_no
     try {
@@ -26,11 +58,10 @@ router.post('/create_ticket', async (req, res) => {
                 ticket_no = (numericPart + 1).toString().padStart(3, '0');
             }
             const ticket = await Ticket.create({
-                disability,
-                disabled: disability !==""? true: false,
                 phone,
                 ticket_no,
-                status: "waiting"
+                category: category,
+                status: category=="insurance"?"insurance":"waiting"
             })
             const lastBackup = await TokenBackup.findOne({
                 order: [['createdAt', 'DESC']]
@@ -40,28 +71,25 @@ router.post('/create_ticket', async (req, res) => {
                 const numericPart = parseInt(lastTicketNumber, 10);
                 back_no = (numericPart + 1).toString().padStart(3, '0');
                 const backup = await TokenBackup.create({
-                    disability,
-                    disabled: disability !==""? true: false,
                     phone,
+                    category: category,
                     ticket_no: back_no,
                     stage: "meds",
-                    status: "waiting",
+                    status: category=="insurance"?"insurance":"waiting",
                 })
                 res.json(ticket);
             }else{
                 const backup = await TokenBackup.create({
-                    disability,
-                    disabled: disability !==""? true: false,
                     phone,
                     ticket_no,
                     stage: "meds",
-                    status: "waiting",
+                    status: category=="insurance"?"insurance":"waiting",
+                    category: category,
                 })
                 res.json(ticket);
             }
         }
     } catch (err) {
-        //next({error: err})
         res.status(500).json({ error: err });
     }
 });
@@ -453,7 +481,9 @@ router.post('/clinic_go', async (req, res, next) => {
                     stage: stage,
                     paid: false,
                     account_time: new Date(),
-                    cashier_id: cashier_id
+                    cashier_id: cashier_id,
+                    serving: false,
+                    counter: null
                     })
                     const backup = await TokenBackup.findOne({
                         where: {mr_no: ticket.mr_no, createdAt: {[Op.gte]: twelveHoursAgo}}
@@ -464,7 +494,9 @@ router.post('/clinic_go', async (req, res, next) => {
                             stage: stage,
                             paid: false,
                             account_time: new Date(),
-                            cashier_id: cashier_id
+                            cashier_id: cashier_id,
+                            serving: false,
+                            counter: null
                             }) 
                     }
                     res.json(data.data.data.consStatus)
@@ -482,7 +514,9 @@ router.post('/clinic_go', async (req, res, next) => {
                     paid: true,
                     serving: false,
                     account_time: new Date(),
-                    cashier_id: cashier_id
+                    cashier_id: cashier_id,
+                    serving: false,
+                    counter: null
                     })
                     const backup = await TokenBackup.findOne({
                         where: {mr_no: ticket.mr_no,createdAt: {[Op.gte]: twelveHoursAgo}}
@@ -493,7 +527,9 @@ router.post('/clinic_go', async (req, res, next) => {
                             stage: stage,
                             paid: true,
                             account_time: new Date(),
-                            cashier_id: cashier_id
+                            cashier_id: cashier_id,
+                            serving: false,
+                            counter: null
                             }) 
                     }
                     res.json(data.data.data.consStatus)
@@ -915,6 +951,8 @@ const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
                     name: name,
                     gender: sex,
                     mr_no: mr_number,
+                    serving: false,
+                    counter: null,
                     // disabled: penalized?false: ticket.disabled,
                     // disability: penalized?"": ticket.disability,
                     med_time: new Date(),
@@ -938,7 +976,9 @@ const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
                         med_time: new Date(),
                         recorder_id: recorder_id,
                         age: age,
-                        category
+                        category,
+                        serving: false,
+                        counter: null,
                     })
                 }
                 res.json(backup)

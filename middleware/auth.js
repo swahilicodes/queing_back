@@ -6,7 +6,6 @@ const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'] || req.headers['Authorization'];
   //const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
-  console.log('the token is ',req.headers)
   if (!token) {
     return res.sendStatus(401).json({ error: 'unauthorized' })
   }else{
