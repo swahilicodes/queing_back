@@ -25,6 +25,7 @@ const speaker = require('./data/speaker')
 const analytics = require('./data/analytics')
 const newanalytics = require('./data/new_analysis')
 const rest = require('./data/rest')
+const ticketa = require('./data/ticketa')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -67,6 +68,7 @@ app.use('/analytics',analytics)
 app.use('/new_analytics',newanalytics)
 app.use('/uploads',uploads)
 app.use('/rest',rest)
+app.use('/ticketa',ticketa)
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 app.use('/public', express.static(path.join(__dirname, 'public')));

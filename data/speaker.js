@@ -4,17 +4,30 @@ const { Audio } = require('../models/index')
 const cron = require('node-cron')
 const {Op} = require('sequelize')
 const Sequelize = require('sequelize')
+const NodeCache = require('node-cache');
+const cache = new NodeCache({ stdTTL: 30 });
 
 router.post("/create_speaker", async (req,res)=> {
 const { ticket_no, counter, stage, station } = req.body
+const cacheKey = `${ticket_no}:${counter}:${stage}`;
 try{
-    const plai = await Audio.create({
+    const existingAudio = await Audio.findOne({
+      ticket_no,
+      counter,
+      stage,
+      createdAt: { $gte: new Date(Date.now() - 10 * 1000) }
+    });
+    if (existingAudio) {
+      return res.status(400).json({ error: "Audio creation rate limit exceeded. Try again after 30 seconds." });
+    }else{
+        const plai = await Audio.create({
         ticket_no,
         stage,
         station,
         counter
     })
     res.json(plai)
+    }
 }catch(error){
     res.status(500).json({error: error})
 }
