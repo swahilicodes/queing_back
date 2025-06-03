@@ -1,34 +1,44 @@
 const express = require('express')
 const router = express.Router();
-const { Audio } = require('../models/index')
-const cron = require('node-cron')
+const { Audio,Ticket } = require('../models/index');
 const {Op} = require('sequelize')
-const Sequelize = require('sequelize')
-const NodeCache = require('node-cache');
-const cache = new NodeCache({ stdTTL: 30 });
 
 router.post("/create_speaker", async (req,res)=> {
-const { ticket_no, counter, stage, station } = req.body
-const cacheKey = `${ticket_no}:${counter}:${stage}`;
+const { ticket_no, counter, stage, station,attendant_id } = req.body
 try{
     const existingAudio = await Audio.findOne({
-      ticket_no,
-      counter,
-      stage,
-      createdAt: { $gte: new Date(Date.now() - 10 * 1000) }
+        where: {
+        ticket_no: ticket_no,
+        counter: counter,
+        stage: stage,
+        attendant_id: attendant_id,
+        createdAt: {
+            [Op.gte]: new Date(Date.now() - 20 * 1000)
+        }
+    }
     });
     if (existingAudio) {
-      return res.status(400).json({ error: "Audio creation rate limit exceeded. Try again after 30 seconds." });
+      return res.status(400).json({ error: "please wait for 30 seconds"});
     }else{
         const plai = await Audio.create({
         ticket_no,
         stage,
         station,
-        counter
+        counter,
+        attendant_id
     })
+    const ticket = await Ticket.findOne({
+        where: {ticket_no}
+    })
+    if(ticket){
+        ticket.update({
+            calls: ticket.calls+1
+        })
+    }
     res.json(plai)
     }
 }catch(error){
+    console.log(error)
     res.status(500).json({error: error})
 }
 })

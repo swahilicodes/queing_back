@@ -6,7 +6,6 @@ const axios = require('axios')
 const cron = require('node-cron');
 const authMiddleware = require('../utils/authMiddleWare')
 
-
 cron.schedule('*/15 * * * * *', async () => {
   try {
     const time = await InTime.findOne({
@@ -32,13 +31,22 @@ cron.schedule('*/15 * * * * *', async () => {
     for (const ticket of tickets) {
       ticket.status = 'waiting';
       await ticket.save();
-      console.log(`Updated ticket ID ${ticket.id} to status 'waiting'`);
+      //console.log(`Updated ticket ID ${ticket.id} to status 'waiting'`);
     }
 
   } catch (error) {
     console.error('Error in cron job:', error);
   }
 });
+
+router.get("/get_all_the_tickets", async (req,res)=> {
+    try{
+        const all = await Ticket.findAll()
+        res.json(all)
+    } catch (err) {
+        res.status(500).json({ error: err });
+    }
+})
 
 router.post('/create_ticket', async (req, res) => {
     const { phone,category} = req.body;
@@ -451,12 +459,30 @@ router.get('/priority',authMiddleware, async (req, res, next) => {
                         })
                         res.json(token)
                     }else{
-                        token.update({
+                        const other = await Ticket.findOne({
+                            where: {
+                                serving: true,
+                                serving_id: user.phone
+                            }
+                        })
+                        if(other){
+                            // other.update({
+                            //     serving: false
+                            // })
+                            token.update({
                             serving: true,
                             serving_id: user.phone,
                             counter: counter
                         })
                         res.json(token)
+                        }else{
+                            token.update({
+                            serving: true,
+                            serving_id: user.phone,
+                            counter: counter
+                        })
+                        res.json(token)
+                        }
                     }
                 }
                 else{
@@ -647,7 +673,6 @@ router.get('/getMedsTickets', async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    console.log(req.query)
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     if(phone.trim() !== '' || ticket_no !== ''){ 
         try {
@@ -723,7 +748,6 @@ router.get('/getMedsTickets', async (req, res, next) => {
                     counter: counter
                 }
             })
-            console.log(curr)
             res.json({
                 data: result,
                 totalItems: curr.count,
@@ -795,7 +819,6 @@ router.get('/getMedsTickets', async (req, res, next) => {
                     counter: counter
                 }
             })
-            console.log(curr.length)
             res.json({
                 data: result,
                 totalItems: curr.count,
@@ -989,27 +1012,6 @@ const {status} = req.body
         res.status(500).json({ error: err });
     }
 });
-// edit ticket
-// router.put('/penalt/:id', async (req, res, next) => {
-// const id = req.params.id
-//     try {
-//         const ticket = await Ticket.findOne({
-//             where: { id }
-//         })
-//         if(!ticket){
-//             return res.status(400).json({ error: 'ticket not found' });
-//         }else {
-//             ticket.update({
-//                 disabled: false,
-//                 disability: "",
-//                 status: "waiting"
-//             })
-//             res.json(ticket)
-//         }
-//     } catch (err) {
-//         res.status(500).json({ error: err });
-//     }
-// });
 // edit ticket
 router.put('/finish_token/:id', async (req, res, next) => {
 const id = req.params.id

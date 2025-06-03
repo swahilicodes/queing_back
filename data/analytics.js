@@ -51,8 +51,14 @@ router.get('/peak_times', async (req, res, next) => {
     const { time } = req.query
     const now = new Date();
     // day
-    startDay = new Date(now.setHours(0, 0, 0, 0));
-    endDay = new Date(now.setHours(23, 59, 59, 999));
+    // const startOfDay = new Date();
+    // startOfDay.setHours(0, 0, 0, 0);
+    // const endOfDay = new Date();
+    // endOfDay.setHours(23, 59, 59, 999);
+    startDay = new Date();
+    startDay.setHours(0, 0, 0, 0)
+    endDay = new Date();
+    endDay.setHours(23, 59, 59, 999);
     //week
     startWeek = new Date(now.setDate(now.getDate() - now.getDay()));
     startWeek.setHours(0, 0, 0, 0);

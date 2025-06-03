@@ -93,6 +93,11 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true,
       },
+      calls: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        default: 0
+      },
       nurse_id: {
         type: Sequelize.STRING,
         allowNull: true,

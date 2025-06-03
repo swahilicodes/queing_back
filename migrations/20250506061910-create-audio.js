@@ -25,6 +25,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      attendant_id: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       talking: {
         type: Sequelize.BOOLEAN,
         allowNull: false,
