@@ -185,6 +185,21 @@ router.get("/get_devices", async (req, res) => {
       res.status(500).json({ error: err });
   }
 });
+// get a single device
+router.get("/get_device", async (req, res) => {
+  const {id} = req.query
+  try {
+      const curr = await Device.findOne({
+          where: {
+            macAddress: id
+          }
+      })
+      res.json(curr)
+  } catch (err) {
+      //next({error: err})
+      res.status(500).json({ error: err });
+  }
+});
 // edit device
 router.get("/edit_device", async (req, res) => {
   const { page, id, deviceName, deviceModel, manufucturer,window } = req.query

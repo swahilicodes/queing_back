@@ -28,10 +28,20 @@ router.post('/create_dokta', async (req, res) => {
             const user = await User.findOne({
                 where: {phone}
             })
-            if(att !== null){
+            if(att && user){
                 return res.status(400).json({ error: 'Doctor exists' });  
-            }else if(user){
-                return res.status(400).json({ error: 'user exists' }); 
+            }else if(user && att===null){
+                const newAtt = await Dokta.create({
+                    name,
+                    phone,
+                    service: "clinic",
+                    room,
+                    clinic_code,
+                    clinic,
+                    role: "doctor",
+                    password: newPass
+                })
+                res.json(newAtt)
             }else{
                 const newAtt = await Dokta.create({
                     name,
@@ -90,7 +100,7 @@ router.get('/get_doktas', async (req, res) => {
 router.get('/get_clinic_doktas', async (req, res) => {
     const {clinics} = req.query
     const page = parseInt(req.query.page) || 1;
-    const pageSize = parseInt(req.query.pageSize) || 10;
+    const pageSize = parseInt(req.query.pageSize) || 5;
     const offset = (page - 1) * pageSize;
     try {
         const curr = await Dokta.findAndCountAll({
@@ -154,22 +164,50 @@ router.post('/assign_doctor', async (req, res) => {
     }
 });
 // get doctor patients
-router.get('/get_doc_patients',authMiddleware, async (req, res) => {
-    const {status} = req.query
-    const user = req.user
+router.get('/get_doc_patients', authMiddleware, async (req, res) => {
+    // Parse query parameters with defaults
+    const { status } = req.query;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const user = req.user;
+    
     try {
         const current = await Dokta.findOne({
-            where: {phone: user.phone}
-        })
-        if(current){
-            const pats = await Ticket.findAll({
-                where: {doctor_id: current.id,status: status,stage: "nurse_station"}
-            })
-            res.json(pats)
+            where: { phone: user.phone }
+        });
+        
+        if (!current) {
+            return res.status(404).json({ error: "Doctor not found" });
         }
+
+        const offset = (page - 1) * limit;
+        
+        const { count, rows: pats } = await Ticket.findAndCountAll({
+            where: { 
+                doctor_id: current.id, 
+                status: status, 
+                stage: "nurse_station" 
+            },
+            limit: limit,
+            offset: offset,
+            order: [['createdAt', 'DESC']]
+        });
+
+        const totalPages = Math.ceil(count / limit);
+        
+        res.json({
+            totalPatients: count,
+            totalPages: totalPages,
+            currentPage: page,
+            patientsPerPage: limit,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: page > 1,
+            patients: pats
+        });
+        
     } catch (err) {
-        //next({error: err})
-        res.status(500).json({ error: err });
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -527,40 +565,66 @@ router.put('/edit_dokta/:id', async (req, res) => {
   }
 });
 
-// router.post("/edit_doctor",authMiddleware, async (req,res)=> {
-//     const {name, clinic,clinic_code, room} = req.body
-//     if(name.trim()===""){
-//         return res.status(400).json({error: "name is empty"})
-//     }else if(clinic.trim()===""){
-//         return res.status(400).json({error: "clinic is empty"})
-//     }else if(clinic_code.trim()===""){
-//         return res.status(400).json({error: "clinic code is empty"})
-//     }else if(room.trim()===""){
-//         return res.status(400).json({error: "room is empty"})
-//     }else{
-//         const user = req.user
-//         const new_user = await User.findOne({
-//             where: {phone: user.phone}
-//         })
-//         const new_doc = await Dokta.findOne({
-//             where: {phone: user.phone}
-//         })
-//         if(!new_user && ! new_doc){
-//          return res.status(400).json({error: "user not found"})   
-//         }else{
-//            new_user.update({
-//                 name,
-//                 counter: room
-//             })
-//             new_doc.update({
-//                 name,
-//                 clinic,
-//                 clinic_code,
-//                 room,
-//             })
-//             res.json(new_doc)
-//         }
-//     }
-// })
+router.post("/edit_doctor_one", authMiddleware, async (req, res) => {
+    const { name, clinic, clinic_code, room,status } = req.body;
+    const user = req.user;
+    console.log(req.body)
+    try {
+        // Validate inputs
+        if (!name || typeof name !== 'string' || name.trim() === "") {
+            return res.status(400).json({ error: "Name is required" });
+        }else if (!clinic || typeof clinic !== 'string' || clinic.trim() === "") {
+            return res.status(400).json({ error: "Clinic is required" });
+        }else if (!clinic_code || typeof clinic_code !== 'string' || clinic_code.trim() === "") {
+            return res.status(400).json({ error: "Clinic code is required" });
+        }else if (!room || typeof room !== 'string' || room.trim() === "") {
+            return res.status(400).json({ error: "Room is required" });
+        }else if (!status || typeof status !== 'string' || status.trim() === "") {
+            return res.status(400).json({ error: "Status is required" });
+        }else{
+            // Find records
+        const existingUser = await User.findOne({ where: { phone: user.phone } });
+        const existingDoctor = await Dokta.findOne({ where: { phone: user.phone} });
+        console.log(existingDoctor,existingUser)
+        if (!existingUser || !existingDoctor) {
+            return res.status(400).json({ error: "User not found" });
+        }else{
+            if (existingDoctor) {
+            await existingDoctor.update({
+                name: name.trim(),
+                clinic: clinic.trim(),
+                clinic_code: clinic_code.trim(),
+                room: room.trim(),
+                status: status
+            });
+            
+            //If you need to update the user as well:
+            if (existingUser) {
+                await existingUser.update({
+                    name: name.trim(),
+                    counter: room.trim()
+                });
+            }
+
+            return res.json({
+                success: true,
+                doctor: {
+                    name: existingDoctor.name,
+                    clinic: existingDoctor.clinic,
+                    clinic_code: existingDoctor.clinic_code,
+                    room: existingDoctor.room
+                }
+            });
+        }
+
+        return res.status(400).json({ error: "Doctor record not found" });
+        }
+        }
+
+    } catch (error) {
+        console.error("Error in edit_doctor_one:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
 
 module.exports = router;

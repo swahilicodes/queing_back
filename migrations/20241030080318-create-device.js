@@ -41,6 +41,14 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: true
       },
+      floor: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
+      isDiabetic: {
+        type: Sequelize.BOOLEAN,
+        allowNull: true
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

@@ -19,6 +19,16 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       unique: true
     },
+    floor: {
+        type: DataTypes.STRING,
+        defaultValue: "first",
+        allowNull: true,
+      },
+      isDiabetic: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: true,
+      },
     stage: {
       type: DataTypes.STRING,
       defaultValue: "meds"

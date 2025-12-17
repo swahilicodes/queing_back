@@ -182,6 +182,7 @@ function formatTimeDuration(ms) {
 }
 
 // Compute statistics
+// Compute statistics
 function calculateStatistics(tokens, duration, dateRange) {
     const stats = {
         duration: duration.toLowerCase(),
@@ -223,9 +224,9 @@ function calculateStatistics(tokens, duration, dateRange) {
 
     stats.peak_times = Object.entries(hourlyCount)
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 3)
+        .slice(0, 2)
         .map(([h]) => `${h}:00 - ${parseInt(h) + 1}:00,[${hourlyCount[h]}]`);
-    //console.log(hourlyCount)
+
     // Output time calculations
     const medTimes = [];
     const accTimes = [];
@@ -238,8 +239,8 @@ function calculateStatistics(tokens, duration, dateRange) {
             if (t > 0) medTimes.push(t);
         }
 
-        if (token.med_time && token.account_time) {
-            const t = new Date(token.account_time) - new Date(token.med_time);
+        if (token.createdAt && token.account_time) {
+            const t = new Date(token.account_time) - new Date(token.createdAt);
             if (t > 0) accTimes.push(t);
         }
 

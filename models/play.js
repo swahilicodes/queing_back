@@ -30,6 +30,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    floor: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
     talking: {
       type: DataTypes.BOOLEAN,
       allowNull: false,

@@ -29,6 +29,16 @@ module.exports = {
         defaultValue: "meds"
         // allowNull: false,
       },
+      floor: {
+        type: Sequelize.STRING,
+        default: "first",
+        allowNull: true,
+      },
+      isDiabetic: {
+        type: Sequelize.BOOLEAN,
+        default: false,
+        allowNull: true,
+      },
       mr_no: {
         type: Sequelize.STRING,
         allowNull: true,

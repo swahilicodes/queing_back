@@ -4,7 +4,8 @@ const { Audio,Ticket } = require('../models/index');
 const {Op} = require('sequelize')
 
 router.post("/create_speaker", async (req,res)=> {
-const { ticket_no, counter, stage, station,attendant_id } = req.body
+const { ticket_no, counter, stage, station,attendant_id,floor } = req.body
+console.log(req.body)
 try{
     const existingAudio = await Audio.findOne({
         where: {
@@ -25,14 +26,17 @@ try{
         stage,
         station,
         counter,
-        attendant_id
+        attendant_id,
+        floor
     })
     const ticket = await Ticket.findOne({
         where: {ticket_no}
     })
     if(ticket){
         ticket.update({
-            calls: ticket.calls+1
+            calls: ticket.calls+1,
+            serving: true,
+            counter: counter
         })
     }
     res.json(plai)
@@ -44,17 +48,12 @@ try{
 })
 // get all speakers
 router.get("/get_speakers", async (req,res)=> {
-const { station } = req.query
+const { floor } = req.query
 try{
-    if(station.trim()===""){
-        const speaks = await Audio.findAll()
-        res.json(speaks)
-    }else{
-        const speaks = await Audio.findAll({
-            where: {station: station}
-        })
-        res.json(speaks)
-    }
+    const speaks = await Audio.findAll({
+        where: {station: floor}
+    })
+    res.json(speaks)
 }catch(error){
     res.status(500).json({error: error})
 }

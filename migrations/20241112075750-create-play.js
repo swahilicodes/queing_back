@@ -25,6 +25,10 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false
       },
+      floor: {
+        type: Sequelize.STRING,
+        allowNull: false
+      },
       talking: {
         type: Sequelize.BOOLEAN,
         allowNull: false,

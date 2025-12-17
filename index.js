@@ -27,6 +27,8 @@ const newanalytics = require('./data/new_analysis')
 const rest = require('./data/rest')
 const ticketa = require('./data/ticketa')
 const codes = require('./data/codes')
+const newAttendants = require('./data/attendants_new')
+const tokensPerHour = require('./data/token_time')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -71,6 +73,8 @@ app.use('/uploads',uploads)
 app.use('/rest',rest)
 app.use('/ticketa',ticketa)
 app.use('/codes',codes)
+app.use('/attend-new',newAttendants)
+app.use('/token-hour',tokensPerHour)
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 app.use('/public', express.static(path.join(__dirname, 'public')));
