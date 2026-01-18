@@ -20,15 +20,20 @@ module.exports = (sequelize, DataTypes) => {
       unique: true
     },
     floor: {
-        type: DataTypes.STRING,
-        defaultValue: "first",
-        allowNull: true,
-      },
-      isDiabetic: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-        allowNull: true,
-      },
+      type: DataTypes.STRING,
+      defaultValue: "first",
+      allowNull: true,
+    },
+    isDiabetic: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: true,
+    },
+    isChild: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      allowNull: true,
+    },
     stage: {
       type: DataTypes.STRING,
       defaultValue: "meds"
@@ -76,14 +81,14 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: null
     },
     calls: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        default: 0
-      },
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      default: 0
+    },
     status: {
       type: DataTypes.STRING,
       allowNull: false,
-      default:"waiting"
+      default: "waiting"
     },
     phone: {
       type: DataTypes.STRING,

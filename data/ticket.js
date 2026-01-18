@@ -5,6 +5,7 @@ const { Op } = require('sequelize')
 const axios = require('axios')
 const cron = require('node-cron');
 const authMiddleware = require('../utils/authMiddleWare')
+const {getIpByPurpose} = require('../functions/get_ip_by_purpose')
 
 cron.schedule('*/15 * * * * *', async () => {
   try {
@@ -31,7 +32,6 @@ cron.schedule('*/15 * * * * *', async () => {
     for (const ticket of tickets) {
       ticket.status = 'waiting';
       await ticket.save();
-      //console.log(`Updated ticket ID ${ticket.id} to status 'waiting'`);
     }
 
   } catch (error) {
@@ -138,21 +138,22 @@ router.post('/create_ticket', async (req, res) => {
             }
         }
     } catch (err) {
-        console.log(err)
         res.status(500).json({ error: err });
     }
 });
 
 // get queues
 router.get('/get_display_tokens', async (req, res, next) => {
-    const { stage, clinic_code, floor, isDiabetic } = req.query;
+    const { stage, clinic_code, floor, isDiabetic, isChild } = req.query;
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
     const isDiabeticValue =
     isDiabetic === 'true' ? 1 :
     isDiabetic === 'false' ? 0 :
     null;
-
-    console.log(req.query)
+    const isChildValue =
+    isChild === 'true' ? 1 :
+    isChild === 'false' ? 0 :
+    null;
 
     if (!stage || stage.trim() === "") {
         return res.status(400).json({ error: 'stage is required' });
@@ -168,7 +169,8 @@ router.get('/get_display_tokens', async (req, res, next) => {
         try {
             const disabledToks = await Ticket.findAll({
                 where: {
-                    isDiabetic: isDiabetic,
+                    isDiabetic: isDiabeticValue,
+                    isChild: isChildValue,
                     floor: floor, // Match provided floor
                     stage: stage,
                     [Op.or]: [
@@ -184,7 +186,8 @@ router.get('/get_display_tokens', async (req, res, next) => {
             });
             const normalToks = await Ticket.findAll({
                 where: {
-                    isDiabetic: isDiabetic,
+                    isDiabetic: isDiabeticValue,
+                    isChild: isChildValue,
                     floor: floor, // Match provided floor
                     stage: stage,
                     [Op.or]: [
@@ -202,7 +205,8 @@ router.get('/get_display_tokens', async (req, res, next) => {
             const normalIds = normalToks.map(ticket => ticket.id);
             const otherToks = await Ticket.findAll({
                 where: {
-                    iisDiabetic: isDiabetic,
+                    iisDiabetic: isDiabeticValue,
+                    isChild: isChildValue,
                     floor: floor, // Match provided floor
                     stage: stage,
                     [Op.or]: [
@@ -235,6 +239,7 @@ router.get('/get_display_tokens', async (req, res, next) => {
             const disabledToks = await Ticket.findAll({
                 where: {
                     isDiabetic: isDiabeticValue,
+                    isChild: isChildValue,
                     floor: floor, // Match provided floor
                     stage: stage,
                     [Op.or]: [
@@ -250,6 +255,7 @@ router.get('/get_display_tokens', async (req, res, next) => {
             const normalToks = await Ticket.findAll({
                 where: {
                     isDiabetic: isDiabeticValue,
+                    isChild: isChildValue,
                     floor: floor, // Match provided floor
                     stage: stage,
                     status: "waiting",
@@ -264,6 +270,7 @@ router.get('/get_display_tokens', async (req, res, next) => {
             const otherToks = await Ticket.findAll({
                 where: {
                     isDiabetic: isDiabeticValue,
+                    isChild: isChildValue,
                     floor: floor, // Match provided floor
                     stage: stage,
                     [Op.or]: [
@@ -289,7 +296,6 @@ router.get('/get_display_tokens', async (req, res, next) => {
             });
             res.json(result);
         } catch (err) {
-            console.log(err);
             res.status(500).json({ error: "internal server error" });
         }
     }
@@ -441,11 +447,12 @@ router.get('/get_clinic_tokens', async (req, res, next) => {
 });
 // get all queues
 router.get('/next_stage', async (req, res, next) => {
+    const ip = await getIpByPurpose('jeeva')
     const { mr_number } = req.query
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
     }else{
-        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/patients/${mr_number}`).then((data)=> {
+        axios.get(`http://${ip}/dev/jeeva_api/swagger/patients/${mr_number}`).then((data)=> {
             if(data.data.status === 201){
                 return res.status(400).json({ error: 'Mr Number does not exist' }); 
             }else{
@@ -533,7 +540,6 @@ router.get('/priority',authMiddleware, async (req, res, next) => {
                 return res.status(400).json({ error: 'token not found' });  
             }
         }catch(error){
-            console.log(error)
             res.status(500).json({ error: error });
         }
     }
@@ -542,10 +548,11 @@ router.get('/priority',authMiddleware, async (req, res, next) => {
 router.post('/clinic_go', async (req, res, next) => {
     const { mr_number, stage, cashier_id } = req.body
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+    const ip = await getIpByPurpose('jeeva')
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
     }else{
-        axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${mr_number}`).then(async (data)=> {
+        axios.get(`http://${ip}/dev/jeeva_api/swagger/consultation/${mr_number}`).then(async (data)=> {
             if(data.data.status === 201){
                 const ticket = await Ticket.findOne({
                     where: {mr_no: mr_number}
@@ -700,12 +707,12 @@ router.get('/getMedsTickets', async (req, res, next) => {
     const phone = req.query.phone
     const ticket_no = req.query.phone
     const isDiabetic = req.query.isDiabetic
+    const isChild = req.query.isChild
     const stage = req.query.stage
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
     const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-    console.log(req.query)
     if(phone.trim() !== '' || ticket_no !== ''){ 
         try {
             const disabledToks = await Ticket.findAndCountAll({
@@ -716,6 +723,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                         stage: stage,
                         floor: floor,
                         isDiabetic: isDiabetic==='true'?1:0,
+                        isChild: isChild==='true'?1:0,
                         status: status
                     }),
                     disabled: true,
@@ -740,6 +748,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                         floor: floor,
                         stage: stage,
                         isDiabetic: isDiabetic==='true'?1:0,
+                        isChild: isChild==='true'?1:0,
                         status: status
                     }),
                     disabled: false,
@@ -762,6 +771,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                         floor: floor,
                         stage: stage,
                         isDiabetic: isDiabetic==='true'?1:0,
+                        isChild: isChild==='true'?1:0,
                         status: status
                     }),
                     [Op.or]: [
@@ -804,6 +814,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                         floor: floor,
                         stage: stage,
                         isDiabetic: isDiabetic==='true'?1:0,
+                        isChild: isChild==='true'?1:0,
                         status: status
                     }),
                     disabled: true,
@@ -824,6 +835,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                         floor: floor,
                         stage: stage,
                         isDiabetic: isDiabetic==='true'?1:0,
+                        isChild: isChild==='true'?1:0,
                         status: status
                     }),
                     disabled: false,
@@ -843,6 +855,7 @@ router.get('/getMedsTickets', async (req, res, next) => {
                         floor: floor,
                         stage: stage,
                         isDiabetic: isDiabetic==='true'?1:0,
+                        isChild: isChild==='true'?1:0,
                         status: status
                     }),
                     createdAt: {[Op.gte]: twelveHoursAgo},
@@ -869,7 +882,6 @@ router.get('/getMedsTickets', async (req, res, next) => {
                 totalPages: Math.ceil(curr.count / pageSize),
             })
         } catch (err) {
-            console.log(err)
             res.status(500).json({ error: "internal server error" });
         }
     }
@@ -884,7 +896,6 @@ router.get('/getClinicTickets', async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
     const offset = (page - 1) * pageSize;
-    console.log(page,pageSize)
 
     try {
         let tickets;
@@ -1329,11 +1340,12 @@ const { clinic_code } = req.query
 });
 // Cron job to find unpaid tickets every 5 minutes
 cron.schedule('*/5 * * * * *', async () => {
+    const ip = await getIpByPurpose('jeeva')
     try {
       const unpaidTickets = await Ticket.findAll({ where: { paid: false, stage: "nurse_station" } });
       for (const ticket of unpaidTickets) {
         try{
-            const response = await axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/consultation/${ticket.mr_no}`);
+            const response = await axios.get(`http://${ip}/dev/jeeva_api/swagger/consultation/${ticket.mr_no}`);
             if(response.data.status === 201 && response.data.data.consStatus==="Not Paid"){
             }else if(response.data.status===200 && response.data.data.consStatus==="Paid"){
                 ticket.update({

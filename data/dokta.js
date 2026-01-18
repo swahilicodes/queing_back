@@ -5,6 +5,7 @@ const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs")
 const axios = require('axios');
 const authMiddleware = require('../utils/authMiddleWare');
+const {getIpByPurpose} = require('../functions/get_ip_by_purpose')
 
 
 router.post('/create_dokta', async (req, res) => {
@@ -372,6 +373,7 @@ router.put('/delete_dokta/:id', async (req, res) => {
 router.post('/finish_patient', async (req, res) => {
     const { doctor_id, patient_id } = req.body;
     const now = new Date();
+    const ip = await getIpByPurpose('jeeva')
 
     const formattedDate =
         now.getFullYear().toString() +
@@ -394,7 +396,7 @@ router.post('/finish_patient', async (req, res) => {
         }
 
         const response = await axios.get(
-            `http://192.168.235.65/dev/jeeva_api/swagger/billing/${"M85-51-780"}/${formattedDate}/${tic.clinic_code}`
+            `http://${ip}/dev/jeeva_api/swagger/billing/${"M85-51-780"}/${formattedDate}/${tic.clinic_code}`
         );
 
         // Log the API response for debugging
@@ -495,6 +497,7 @@ router.post('/finish_patient', async (req, res) => {
 router.get('/verify_vipimo', async (req, res) => {
     const {mr_no, clinic_code} = req.body
     const now = new Date();
+    const ip = await getIpByPurpose('jeeva')
 
     const formattedDate = now.getFullYear().toString() +
     String(now.getMonth() + 1).padStart(2, '0') +
@@ -505,7 +508,7 @@ router.get('/verify_vipimo', async (req, res) => {
         }else if(clinic_code.trim() == ""){
             return res.status(400).json({ error: 'clinic code not provided' }); 
         }else{
-            axios.get(`http://192.168.235.65/dev/jeeva_api/swagger/billing/${mr_no}/${formattedDate}/${clinic_code}`).then((data)=> {
+            axios.get(`http://${ip}/dev/jeeva_api/swagger/billing/${mr_no}/${formattedDate}/${clinic_code}`).then((data)=> {
                 console.log('the data is ',data.data)
                 return res.json(data.data)
             }).catch((error)=> {

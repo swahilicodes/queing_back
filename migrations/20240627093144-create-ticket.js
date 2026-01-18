@@ -12,7 +12,7 @@ module.exports = {
       status: {
         type: Sequelize.STRING,
         allowNull: false,
-        default:"waiting"
+        default: "waiting"
       },
       dateTime: {
         type: Sequelize.DATE,
@@ -35,6 +35,11 @@ module.exports = {
         allowNull: true,
       },
       isDiabetic: {
+        type: Sequelize.BOOLEAN,
+        default: false,
+        allowNull: true,
+      },
+      isChild: {
         type: Sequelize.BOOLEAN,
         default: false,
         allowNull: true,

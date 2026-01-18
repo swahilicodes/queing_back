@@ -50,6 +50,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.BOOLEAN,
       allowNull: true
     },
+    isChild: {
+      type: DataTypes.BOOLEAN,
+      allowNull: true
+    },
     default_page: {
       type: DataTypes.STRING,
       allowNull: true

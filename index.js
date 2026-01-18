@@ -29,6 +29,7 @@ const ticketa = require('./data/ticketa')
 const codes = require('./data/codes')
 const newAttendants = require('./data/attendants_new')
 const tokensPerHour = require('./data/token_time')
+const dynamicIp = require('./data/dynamic_ip')
 const { Ticket } = require('./models/index')
 const cron = require('node-cron');
 
@@ -43,7 +44,7 @@ const corsOptions = {
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
-const port = 5000;
+const port = 5005;
 app.use(cors(corsOptions));
 
 app.use(cors());
@@ -75,6 +76,7 @@ app.use('/ticketa',ticketa)
 app.use('/codes',codes)
 app.use('/attend-new',newAttendants)
 app.use('/token-hour',tokensPerHour)
+app.use('/ip-address',dynamicIp)
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 app.use('/public', express.static(path.join(__dirname, 'public')));

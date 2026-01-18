@@ -5,10 +5,12 @@ const { Op } = require('sequelize')
 const bcrypt = require("bcryptjs");
 const { default: axios } = require('axios');
 const cron = require('node-cron');
+const {getIpByPurpose} = require('../functions/get_ip_by_purpose')
 
 
 router.post('/create_clinic', async (req, res) => {
     const { cliniciname,clinicicode, status, deptcode } = req.body;
+    const ip = await getIpByPurpose('jeeva')
     try {
         if(cliniciname.trim() === ''){
             return res.status(400).json({ error: 'clinic name is required' });
@@ -32,7 +34,7 @@ router.post('/create_clinic', async (req, res) => {
 // get jeeva clinics
 router.get('/jeeva_clinics', async (req, res) => {
     try {
-        axios.get("http://192.168.235.65/dev/jeeva_api/swagger/clinics").then((data)=> {
+        axios.get(`http://${ip}/dev/jeeva_api/swagger/clinics`).then((data)=> {
             if(data.status === 200){
                 res.json(data.data)
             }else{
@@ -77,11 +79,10 @@ router.get("/get_display_clinics", async (req, res) => {
   });
 
 const job = cron.schedule('0 0 * * *', async () => {
-    console.log('Cron job triggered at', new Date().toISOString());
-  
+  const ip = await getIpByPurpose('jeeva')
     try {
       // Fetch data from the API
-      const response = await axios.get('http://192.168.235.65/dev/jeeva_api/swagger/clinics');
+      const response = await axios.get(`http://${ip}/dev/jeeva_api/swagger/clinics`);
   
       if (response.data.status !== 200 || !Array.isArray(response.data.data)) {
         console.error('Unexpected API response format:', response.data);

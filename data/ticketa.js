@@ -61,7 +61,7 @@ router.get("/today_ticks", async (req, res) => {
 
 // create ticket 
 router.post("/create_ticket", async (req, res) => {
-  const { phone, category, hasMedical, isNHIF, floor, isDiabetic } = req.body;
+  const { phone, category, hasMedical, isNHIF, floor, isDiabetic,isChild } = req.body;
 
   if (!phone || phone.trim() === "") {
     return res.status(400).json({ error: "phone is required" });
@@ -119,7 +119,8 @@ router.post("/create_ticket", async (req, res) => {
         stage,
         status,
         floor,
-        isDiabetic
+        isDiabetic,
+        isChild
       },
       { transaction }
     );
@@ -139,13 +140,13 @@ router.post("/create_ticket", async (req, res) => {
     await transaction.commit();
 
     // send SMS
-    // sendSMS({
-    //   senderId: "AFYA",
-    //   message: `Namba yako ya foleni ni [${ticket.ticket_no}]. Tafadhali kaa karibu utaitwa muda si mrefu. Ugua pole na karibu *HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA*. `,
-    //   contacts: `${ticket.phone}`,
-    //   apiKey: process.env.kilakona_api_key,
-    //   apiSecret: process.env.kilakona_api_secret,
-    // }).catch((err) => console.log("SMS error", err));
+    sendSMS({
+      senderId: "AFYA",
+      message: `Namba yako ya foleni ni ${ticket.ticket_no} Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
+      contacts: `${ticket.phone}`,
+      apiKey: process.env.kilakona_api_key,
+      apiSecret: process.env.kilakona_api_secret,
+    }).catch((err) => console.log("SMS error", err));
 
     res.json(ticket);
   } catch (err) {
