@@ -26,7 +26,7 @@ router.get('/get_ip', async(req,res) => {
         }else{
             // const newIp = await getIpByPurpose(purpose)
             // res.json(newIp)
-            res.json('here is the ip address 192.168.30.246')
+            res.json('here is the ip address 192.168.30.246 after setting up ci/cd pipelines')
         }
     }catch(error){
         console.log(error)
