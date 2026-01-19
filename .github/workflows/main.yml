@@ -16,13 +16,12 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ swahilicodes }}
-          password: ${{ swahilicodes1995 }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: |
-          docker build -t ${{ swahilicodes }}/qms-back:latest .
+        run: docker build -t ${{ secrets.DOCKER_USERNAME }}/qms-back:latest .
 
       - name: Push Docker image
-        run: |
-          docker push ${{ swahilicodes }}/qms-back:latest
+        run: docker push ${{ secrets.DOCKER_USERNAME }}/qms-back:latest
+
