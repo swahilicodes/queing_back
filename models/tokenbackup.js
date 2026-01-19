@@ -122,6 +122,21 @@ module.exports = (sequelize, DataTypes) => {
       allowNull: false,
       defaultValue: false
     },
+    floor: {
+        type: DataTypes.STRING,
+        defaultValue: 'first',
+        allowNull: false
+      },
+      isChild: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: true
+      },
+      isDiabetic: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: true
+      },
   }, {
     sequelize,
     modelName: 'TokenBackup',

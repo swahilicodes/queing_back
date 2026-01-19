@@ -110,6 +110,21 @@ module.exports = {
         allowNull: false,
         defaultValue: false
       },
+      floor: {
+        type: Sequelize.STRING,
+        default: "first",
+        allowNull: true,
+      },
+      isChild: {
+        type: Sequelize.BOOLEAN,
+        default: false,
+        allowNull: true
+      },
+      isDiabetic: {
+        type: Sequelize.BOOLEAN,
+        default: false,
+        allowNull: true
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
