@@ -24,9 +24,9 @@ router.get('/get_ip', async(req,res) => {
         if(!purpose || purpose.trim()===''){
             return res.status(400).json({error: 'purpose is required'})
         }else{
-            // const newIp = await getIpByPurpose(purpose)
-            // res.json(newIp)
-            res.json('here is the ip address 192.168.30.246 after setting up ci/cd pipelines')
+            const newIp = await getIpByPurpose(purpose)
+            res.json(newIp)
+            //res.json('here is the ip address 192.168.30.246 after setting up ci/cd pipelines')
         }
     }catch(error){
         console.log(error)

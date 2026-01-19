@@ -447,7 +447,8 @@ router.get('/get_clinic_tokens', async (req, res, next) => {
 });
 // get all queues
 router.get('/next_stage', async (req, res, next) => {
-    const ip = await getIpByPurpose('jeeva')
+    const before = await getIpByPurpose('jeeva')
+    const ip = before.ip;
     const { mr_number } = req.query
     if(mr_number.trim() === ""){
         return res.status(400).json({ error: 'Mr Number is required' });
