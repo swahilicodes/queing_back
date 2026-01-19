@@ -19,6 +19,7 @@ router.post('/create_ip', async(req,res) => {
 })
 // get dynamic ip
 router.get('/get_ip', async(req,res) => {
+    console.log('we are getting the ip address please wait')
     const {purpose} = req.query
     try{
         if(!purpose || purpose.trim()===''){
