@@ -170,6 +170,9 @@ router.get("/get_devices", async (req, res) => {
           default_page: item.default_page,
           role: item.role,
           window: item.window,
+          floor: item.floor,
+          isChild: item.isChild,
+          isDiabetic: item.isDiabetic,
           createdAt: item.createdAt,
           updatedAt: item.updatedAt,
           clinics: clinica
@@ -201,33 +204,76 @@ router.get("/get_device", async (req, res) => {
   }
 });
 // edit device
-router.get("/edit_device", async (req, res) => {
-  const { page, id, deviceName, deviceModel, manufucturer,window } = req.query
+// router.get("/edit_device", async (req, res) => {
+//   const { page, id, deviceName, deviceModel, manufucturer,window } = req.query
+//   try {
+//     if(id.trim()===""){
+//       res.status(400).json({error: "id is empty"})
+//     }else{
+//       const div = await Device.findOne({
+//         where: {id: Number(id)}
+//       })
+//       if(div){
+//         div.update({
+//           default_page: page,
+//           deviceModel: deviceModel,
+//           deviceName: deviceName,
+//           manufucturer: manufucturer,
+//           window: window
+//         })
+//         res.json(div)
+//       }else{
+//         res.status(400).json({error: "device not found"})
+//       }
+//     }
+//   } catch (err) {
+//       //next({error: err})
+//       res.status(500).json({ error: err });
+//   }
+// });
+router.post("/edit_device", async (req, res) => {
+  const {
+    id,
+    page,
+    deviceName,
+    deviceModel,
+    manufucturer,
+    window: deviceWindow,
+    floor,
+    isChild,
+    isDiabetic
+  } = req.body;
   try {
-    if(id.trim()===""){
-      res.status(400).json({error: "id is empty"})
-    }else{
-      const div = await Device.findOne({
-        where: {id: Number(id)}
-      })
-      if(div){
-        div.update({
-          default_page: page,
-          deviceModel: deviceModel,
-          deviceName: deviceName,
-          manufucturer: manufucturer,
-          window: window
-        })
-        res.json(div)
-      }else{
-        res.status(400).json({error: "device not found"})
-      }
+    if (!id) {
+      return res.status(400).json({ error: "id is required" });
     }
+
+    const device = await Device.findOne({
+      where: { id: Number(id) }
+    });
+
+    if (!device) {
+      return res.status(404).json({ error: "device not found" });
+    }
+
+    await device.update({
+      default_page: page,
+      deviceName: deviceName,
+      deviceModel: deviceModel,
+      manufucturer: manufucturer,
+      window: deviceWindow,
+      floor: floor,
+      isChild: isChild===true?1:0,
+      isDiabetic: isDiabetic===true?1:0
+    });
+    return res.json(device);
+
   } catch (err) {
-      //next({error: err})
-      res.status(500).json({ error: err });
+    console.error(err);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
+
 // delete device
 router.get("/delete_device", async (req, res) => {
   const {id} = req.query

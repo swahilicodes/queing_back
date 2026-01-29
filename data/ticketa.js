@@ -133,6 +133,9 @@ router.post("/create_ticket", async (req, res) => {
         category,
         stage,
         status,
+        floor,
+        isChild,
+        isDiabetic
       },
       { transaction }
     );

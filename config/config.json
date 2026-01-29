@@ -1,0 +1,46 @@
+{
+    "development": {
+      "username": "qms",
+      "password": "qms1234",
+      "database": "qms",
+      "host": "192.168.30.246",
+      "dialect": "mysql",
+      "logging": false,
+      "pool": {
+        "max": 10,
+        "min": 0,
+        "acquire": 600000,
+        "idle": 10000
+      },
+      "dialectOptions": {
+        "connectTimeout": 60000
+      }
+    },
+    "test": {
+      "dialect":"mysql",
+      "username": "babou360",
+      "password": "leebabou1995",
+      "database": "queing",
+      "host": "192.168.30.245",
+      "port": "3306",
+      "logging": false
+    },
+    "production": {
+      "username": "root",
+      "password": null,
+      "database": "queing",
+      "host": "127.0.0.1",
+      "dialect":"mysql",
+      "logging":false,
+      "pool": {
+        "max": 10,
+        "min": 0,
+        "acquire": 600000,
+        "idle": 10000
+      },
+      "dialectOptions": {
+        "connectTimeout": 60000
+      }
+    }
+  }
+  
