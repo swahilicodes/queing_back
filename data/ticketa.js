@@ -144,7 +144,7 @@ router.post("/create_ticket", async (req, res) => {
 
     // send SMS
     sendSMS({
-      senderId: "AFYA",
+      senderId: "MLG",
       message: `Namba yako ya foleni ni ${ticket.ticket_no} Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
       contacts: `${ticket.phone}`,
       apiKey: process.env.kilakona_api_key,
