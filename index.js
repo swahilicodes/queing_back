@@ -83,8 +83,12 @@ app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use(express.json())
 
 
+console.log('starting cron setup...');
 
-cron.schedule('32 18 * * *', async () => {
+cron.schedule('* * * * *', async () => {
+
+  console.log('Cron triggered');
+
   try {
     await Ticket.destroy({
       truncate: true
@@ -94,7 +98,11 @@ cron.schedule('32 18 * * *', async () => {
   } catch (error) {
     console.error('Error deleting tokens:', error);
   }
-});
+}
+  ,
+  {
+    timezone: 'Africa/Dar_es_Salaam'
+  });
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
