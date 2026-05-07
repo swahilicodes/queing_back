@@ -85,7 +85,7 @@ app.use(express.json())
 
 console.log('starting cron setup...');
 
-cron.schedule('00 19 * * *', async () => {
+cron.schedule('17 19 * * *', async () => {
 
   console.log('Cron triggered');
 
@@ -94,7 +94,7 @@ cron.schedule('00 19 * * *', async () => {
       truncate: true
     });
     // console.log('All tokens deleted successfully at 00:00');
-    console.log('All tokens deleted successfully at 19:00');
+    console.log('All tokens deleted successfully at 19:17');
   } catch (error) {
     console.error('Error deleting tokens:', error);
   }
