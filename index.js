@@ -49,34 +49,34 @@ app.use(cors(corsOptions));
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/queues',queue)
-app.use('/tickets',ticket)
-app.use('/services',service)
-app.use('/counters',counter)
-app.use('/users',user)
-app.use('/admins',admins)
-app.use('/adverts',advert)
-app.use('/doctors',doctor)
-app.use('/nurse',nurse)
-app.use('/suggestion',suggestion)
-app.use('/clinic',clinics)
-app.use('/doktas',doktas)
-app.use('/rooms',rooms)
-app.use('/network',networks)
-app.use('/attendant_clinics',attendant_clinic)
-app.use('/socket',stream)
-app.use('/active',active)
-app.use('/current_clinic',currentClinic)
-app.use('/speaker',speaker)
-app.use('/analytics',analytics)
-app.use('/new_analytics',newanalytics)
-app.use('/uploads',uploads)
-app.use('/rest',rest)
-app.use('/ticketa',ticketa)
-app.use('/codes',codes)
-app.use('/attend-new',newAttendants)
-app.use('/token-hour',tokensPerHour)
-app.use('/ip-address',dynamicIp)
+app.use('/queues', queue)
+app.use('/tickets', ticket)
+app.use('/services', service)
+app.use('/counters', counter)
+app.use('/users', user)
+app.use('/admins', admins)
+app.use('/adverts', advert)
+app.use('/doctors', doctor)
+app.use('/nurse', nurse)
+app.use('/suggestion', suggestion)
+app.use('/clinic', clinics)
+app.use('/doktas', doktas)
+app.use('/rooms', rooms)
+app.use('/network', networks)
+app.use('/attendant_clinics', attendant_clinic)
+app.use('/socket', stream)
+app.use('/active', active)
+app.use('/current_clinic', currentClinic)
+app.use('/speaker', speaker)
+app.use('/analytics', analytics)
+app.use('/new_analytics', newanalytics)
+app.use('/uploads', uploads)
+app.use('/rest', rest)
+app.use('/ticketa', ticketa)
+app.use('/codes', codes)
+app.use('/attend-new', newAttendants)
+app.use('/token-hour', tokensPerHour)
+app.use('/ip-address', dynamicIp)
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 app.use('/public', express.static(path.join(__dirname, 'public')));
@@ -89,11 +89,12 @@ cron.schedule('0 0 * * *', async () => {
     await Ticket.destroy({
       truncate: true
     });
-    console.log('All tokens deleted successfully at 00:00');
+    // console.log('All tokens deleted successfully at 00:00');
+    console.log('All tokens deleted successfully at 18:20');
   } catch (error) {
     console.error('Error deleting tokens:', error);
   }
 });
-  app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
 });
