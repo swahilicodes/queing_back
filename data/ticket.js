@@ -767,7 +767,7 @@ router.get("/getMedsTickets", async (req, res, next) => {
   const pageSize = parseInt(req.query.pageSize) || 10;
   const offset = (page - 1) * pageSize;
   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
-  if (phone.trim() !== "" || ticket_no !== "") {
+  if ((phone && phone.trim() !== "") || (ticket_no && ticket_no !== "")) {
     try {
       const disabledToks = await Ticket.findAndCountAll({
         where: {
