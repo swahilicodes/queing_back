@@ -861,6 +861,7 @@ router.get("/getMedsTickets", async (req, res, next) => {
         totalPages: Math.ceil(curr.count / pageSize),
       });
     } catch (err) {
+      console.log("our error is ",err)
       res.status(500).json({ error: err });
     }
   } else {
@@ -945,6 +946,7 @@ router.get("/getMedsTickets", async (req, res, next) => {
         totalPages: Math.ceil(curr.count / pageSize),
       });
     } catch (err) {
+      console.log("our error is ",err)
       res.status(500).json({ error: "internal server error" });
     }
   }
