@@ -7,19 +7,13 @@ router.post("/create_speaker", async (req, res) => {
     const { ticket_no, counter, stage, station, attendant_id, floor } = req.body
     console.log(req.body);
 
-    if (!station || station === null || station === 'null') {
-        return res.status(400).json({ error: "station is required and cannot be null" });
-    }
-
-    if (!counter || counter === null || counter === 'null') {
-        return res.status(400).json({ error: "counter is required and cannot be null" });
-    }
-
+    const validStation = (station && station !== 'null' && station !== null) ? station : 'first';
+    const validCounter = (counter && counter !== 'null' && counter !== null) ? counter : '1';
     try {
         const existingAudio = await Audio.findOne({
             where: {
                 ticket_no: ticket_no,
-                counter: counter,
+                counter: validCounter,
                 stage: stage,
                 attendant_id: attendant_id,
                 createdAt: {
@@ -33,8 +27,8 @@ router.post("/create_speaker", async (req, res) => {
             const plai = await Audio.create({
                 ticket_no,
                 stage,
-                station,
-                counter,
+                station: validStation,
+                counter: validCounter,
                 attendant_id,
                 floor
             })
@@ -45,7 +39,7 @@ router.post("/create_speaker", async (req, res) => {
                 ticket.update({
                     calls: ticket.calls + 1,
                     serving: true,
-                    counter: counter
+                    counter: validCounter
                 })
             }
             res.json(plai)
