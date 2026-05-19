@@ -755,6 +755,203 @@ router.get("/getWaitingTickets", async (req, res, next) => {
   }
 });
 // get waiting
+// router.get("/getMedsTickets", async (req, res, next) => {
+//   const status = req.query.status;
+//   const floor = req.query.floor;
+//   const phone = req.query.phone;
+//   const ticket_no = req.query.phone;
+//   const isDiabetic = req.query.isDiabetic;
+//   const isChild = req.query.isChild;
+//   const stage = req.query.stage;
+//   const page = parseInt(req.query.page) || 1;
+//   const pageSize = parseInt(req.query.pageSize) || 10;
+//   const offset = (page - 1) * pageSize;
+//   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+//   if ((phone && phone.trim() !== "") || (ticket_no && ticket_no !== "")) {
+//     try {
+//       const disabledToks = await Ticket.findAndCountAll({
+//         where: {
+//           // stage:stage,
+//           // status:status,
+//           ...(status !== "all" && {
+//             stage: stage,
+//             floor: floor,
+//             isDiabetic: isDiabetic === "true" ? 1 : 0,
+//             isChild: isChild === "true" ? 1 : 0,
+//             status: status,
+//           }),
+//           disabled: true,
+//           [Op.or]: [
+//             { phone: { [Op.like]: `%${phone}%` } },
+//             { ticket_no: { [Op.like]: `%${ticket_no}%` } },
+//           ],
+//           createdAt: { [Op.gte]: twelveHoursAgo },
+//         },
+//         offset: offset,
+//         limit: 3,
+//         order: [
+//           // ['disabled', 'DESC'],
+//           ["createdAt", "ASC"],
+//         ],
+//       });
+//       const normalToks = await Ticket.findAndCountAll({
+//         where: {
+//           // stage:stage,
+//           // status:status,
+//           ...(status !== "all" && {
+//             floor: floor,
+//             stage: stage,
+//             isDiabetic: isDiabetic === "true" ? 1 : 0,
+//             isChild: isChild === "true" ? 1 : 0,
+//             status: status,
+//           }),
+//           disabled: false,
+//           [Op.or]: [
+//             { phone: { [Op.like]: `%${phone}%` } },
+//             { ticket_no: { [Op.like]: `%${ticket_no}%` } },
+//           ],
+//           createdAt: { [Op.gte]: twelveHoursAgo },
+//         },
+//         offset: offset,
+//         limit: 5,
+//         order: [["createdAt", "ASC"]],
+//       });
+//       const disabledIds = disabledToks.rows.map((ticket) => ticket.id);
+//       const normalIds = normalToks.rows.map((ticket) => ticket.id);
+//       const otherToks = await Ticket.findAndCountAll({
+//         where: {
+//           // stage: stage,
+//           // status: status,
+//           ...(status !== "all" && {
+//             floor: floor,
+//             stage: stage,
+//             isDiabetic: isDiabetic === "true" ? 1 : 0,
+//             isChild: isChild === "true" ? 1 : 0,
+//             status: status,
+//           }),
+//           [Op.or]: [
+//             { phone: { [Op.like]: `%${phone}%` } },
+//             { ticket_no: { [Op.like]: `%${ticket_no}%` } },
+//           ],
+//           createdAt: { [Op.gte]: twelveHoursAgo },
+//           id: {
+//             [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
+//           },
+//         },
+//         offset: offset,
+//         limit: 10 - (normalToks.rows.length + disabledToks.rows.length),
+//         order: [["createdAt", "ASC"]],
+//       });
+//       const curr = [
+//         ...disabledToks.rows,
+//         ...normalToks.rows,
+//         ...otherToks.rows,
+//       ];
+//       const counters = await Counter.findAll();
+//       const result = curr.map((cu) => {
+//         const counter = counters.find((item) => item.service === cu.stage);
+//         return {
+//           token: cu,
+//           counter: counter,
+//         };
+//       });
+//       res.json({
+//         data: result,
+//         totalItems: curr.count,
+//         totalPages: Math.ceil(curr.count / pageSize),
+//       });
+//     } catch (err) {
+//       console.log("our error is ",err)
+//       res.status(500).json({ error: err });
+//     }
+//   } else {
+//     try {
+//       const disabledToks = await Ticket.findAndCountAll({
+//         where: {
+//           // stage:stage,
+//           // status:status,
+//           ...(status !== "all" && {
+//             floor: floor,
+//             stage: stage,
+//             isDiabetic: isDiabetic === "true" ? 1 : 0,
+//             isChild: isChild === "true" ? 1 : 0,
+//             status: status,
+//           }),
+//           disabled: true,
+//           createdAt: { [Op.gte]: twelveHoursAgo },
+//         },
+//         offset: offset,
+//         limit: 3,
+//         order: [
+//           // ['disabled', 'DESC'],
+//           ["createdAt", "ASC"],
+//         ],
+//       });
+//       const normalToks = await Ticket.findAndCountAll({
+//         where: {
+//           // stage:stage,
+//           // status:status,
+//           ...(status !== "all" && {
+//             floor: floor,
+//             stage: stage,
+//             isDiabetic: isDiabetic === "true" ? 1 : 0,
+//             isChild: isChild === "true" ? 1 : 0,
+//             status: status,
+//           }),
+//           disabled: false,
+//           createdAt: { [Op.gte]: twelveHoursAgo },
+//         },
+//         offset: offset,
+//         limit: 5,
+//         order: [["createdAt", "ASC"]],
+//       });
+//       const disabledIds = disabledToks.rows.map((ticket) => ticket.id);
+//       const normalIds = normalToks.rows.map((ticket) => ticket.id);
+//       const otherToks = await Ticket.findAndCountAll({
+//         where: {
+//           // stage: stage,
+//           // status: status,
+//           ...(status !== "all" && {
+//             floor: floor,
+//             stage: stage,
+//             isDiabetic: isDiabetic === "true" ? 1 : 0,
+//             isChild: isChild === "true" ? 1 : 0,
+//             status: status,
+//           }),
+//           createdAt: { [Op.gte]: twelveHoursAgo },
+//           id: {
+//             [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
+//           },
+//         },
+//         offset: offset,
+//         limit: 10 - (normalToks.rows.length + disabledToks.rows.length),
+//         order: [["createdAt", "ASC"]],
+//       });
+//       const curr = [
+//         ...disabledToks.rows,
+//         ...normalToks.rows,
+//         ...otherToks.rows,
+//       ];
+//       const counters = await Counter.findAll();
+//       const result = curr.map((cu) => {
+//         const counter = counters.find((item) => item.service === cu.stage);
+//         return {
+//           token: cu,
+//           counter: counter,
+//         };
+//       });
+//       res.json({
+//         data: result,
+//         totalItems: curr.count,
+//         totalPages: Math.ceil(curr.count / pageSize),
+//       });
+//     } catch (err) {
+//       console.log("our error is ",err)
+//       res.status(500).json({ error: "internal server error" });
+//     }
+//   }
+// });
+
 router.get("/getMedsTickets", async (req, res, next) => {
   const status = req.query.status;
   const floor = req.query.floor;
@@ -767,186 +964,143 @@ router.get("/getMedsTickets", async (req, res, next) => {
   const pageSize = parseInt(req.query.pageSize) || 10;
   const offset = (page - 1) * pageSize;
   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
+
+  // Helper function to build where clause
+  const buildWhereClause = (extraConditions = {}) => {
+    const whereClause = {
+      createdAt: { [Op.gte]: twelveHoursAgo },
+      ...extraConditions
+    };
+
+    // Only add floor if it has a value and is not 'undefined'
+    if (status !== "all" && floor && floor !== 'undefined') {
+      whereClause.floor = floor;
+      whereClause.stage = stage;
+      whereClause.isDiabetic = isDiabetic === "true" ? 1 : 0;
+      whereClause.isChild = isChild === "true" ? 1 : 0;
+      whereClause.status = status;
+    } else if (status !== "all") {
+      whereClause.stage = stage;
+      whereClause.isDiabetic = isDiabetic === "true" ? 1 : 0;
+      whereClause.isChild = isChild === "true" ? 1 : 0;
+      whereClause.status = status;
+    }
+
+    return whereClause;
+  };
+
   if ((phone && phone.trim() !== "") || (ticket_no && ticket_no !== "")) {
     try {
       const disabledToks = await Ticket.findAndCountAll({
         where: {
-          // stage:stage,
-          // status:status,
-          ...(status !== "all" && {
-            stage: stage,
-            floor: floor,
-            isDiabetic: isDiabetic === "true" ? 1 : 0,
-            isChild: isChild === "true" ? 1 : 0,
-            status: status,
-          }),
-          disabled: true,
+          ...buildWhereClause({ disabled: true }),
           [Op.or]: [
             { phone: { [Op.like]: `%${phone}%` } },
             { ticket_no: { [Op.like]: `%${ticket_no}%` } },
           ],
-          createdAt: { [Op.gte]: twelveHoursAgo },
         },
         offset: offset,
         limit: 3,
-        order: [
-          // ['disabled', 'DESC'],
-          ["createdAt", "ASC"],
-        ],
+        order: [["createdAt", "ASC"]],
       });
+
       const normalToks = await Ticket.findAndCountAll({
         where: {
-          // stage:stage,
-          // status:status,
-          ...(status !== "all" && {
-            floor: floor,
-            stage: stage,
-            isDiabetic: isDiabetic === "true" ? 1 : 0,
-            isChild: isChild === "true" ? 1 : 0,
-            status: status,
-          }),
-          disabled: false,
+          ...buildWhereClause({ disabled: false }),
           [Op.or]: [
             { phone: { [Op.like]: `%${phone}%` } },
             { ticket_no: { [Op.like]: `%${ticket_no}%` } },
           ],
-          createdAt: { [Op.gte]: twelveHoursAgo },
         },
         offset: offset,
         limit: 5,
         order: [["createdAt", "ASC"]],
       });
+
       const disabledIds = disabledToks.rows.map((ticket) => ticket.id);
       const normalIds = normalToks.rows.map((ticket) => ticket.id);
+
       const otherToks = await Ticket.findAndCountAll({
         where: {
-          // stage: stage,
-          // status: status,
-          ...(status !== "all" && {
-            floor: floor,
-            stage: stage,
-            isDiabetic: isDiabetic === "true" ? 1 : 0,
-            isChild: isChild === "true" ? 1 : 0,
-            status: status,
-          }),
+          ...buildWhereClause(),
           [Op.or]: [
             { phone: { [Op.like]: `%${phone}%` } },
             { ticket_no: { [Op.like]: `%${ticket_no}%` } },
           ],
-          createdAt: { [Op.gte]: twelveHoursAgo },
           id: {
-            [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
+            [Op.notIn]: [...disabledIds, ...normalIds],
           },
         },
         offset: offset,
         limit: 10 - (normalToks.rows.length + disabledToks.rows.length),
         order: [["createdAt", "ASC"]],
       });
-      const curr = [
-        ...disabledToks.rows,
-        ...normalToks.rows,
-        ...otherToks.rows,
-      ];
+
+      const curr = [...disabledToks.rows, ...normalToks.rows, ...otherToks.rows];
       const counters = await Counter.findAll();
       const result = curr.map((cu) => {
         const counter = counters.find((item) => item.service === cu.stage);
-        return {
-          token: cu,
-          counter: counter,
-        };
+        return { token: cu, counter: counter };
       });
+
       res.json({
         data: result,
-        totalItems: curr.count,
-        totalPages: Math.ceil(curr.count / pageSize),
+        totalItems: curr.length,
+        totalPages: Math.ceil(curr.length / pageSize),
       });
     } catch (err) {
-      console.log("our error is ",err)
-      res.status(500).json({ error: err });
+      console.log("our error is ", err);
+      res.status(500).json({ error: err.message });
     }
   } else {
     try {
       const disabledToks = await Ticket.findAndCountAll({
         where: {
-          // stage:stage,
-          // status:status,
-          ...(status !== "all" && {
-            floor: floor,
-            stage: stage,
-            isDiabetic: isDiabetic === "true" ? 1 : 0,
-            isChild: isChild === "true" ? 1 : 0,
-            status: status,
-          }),
-          disabled: true,
-          createdAt: { [Op.gte]: twelveHoursAgo },
+          ...buildWhereClause({ disabled: true }),
         },
         offset: offset,
         limit: 3,
-        order: [
-          // ['disabled', 'DESC'],
-          ["createdAt", "ASC"],
-        ],
+        order: [["createdAt", "ASC"]],
       });
+
       const normalToks = await Ticket.findAndCountAll({
         where: {
-          // stage:stage,
-          // status:status,
-          ...(status !== "all" && {
-            floor: floor,
-            stage: stage,
-            isDiabetic: isDiabetic === "true" ? 1 : 0,
-            isChild: isChild === "true" ? 1 : 0,
-            status: status,
-          }),
-          disabled: false,
-          createdAt: { [Op.gte]: twelveHoursAgo },
+          ...buildWhereClause({ disabled: false }),
         },
         offset: offset,
         limit: 5,
         order: [["createdAt", "ASC"]],
       });
+
       const disabledIds = disabledToks.rows.map((ticket) => ticket.id);
       const normalIds = normalToks.rows.map((ticket) => ticket.id);
+
       const otherToks = await Ticket.findAndCountAll({
         where: {
-          // stage: stage,
-          // status: status,
-          ...(status !== "all" && {
-            floor: floor,
-            stage: stage,
-            isDiabetic: isDiabetic === "true" ? 1 : 0,
-            isChild: isChild === "true" ? 1 : 0,
-            status: status,
-          }),
-          createdAt: { [Op.gte]: twelveHoursAgo },
+          ...buildWhereClause(),
           id: {
-            [Op.notIn]: [...disabledIds, ...normalIds], // Exclude the ids from the first two queries
+            [Op.notIn]: [...disabledIds, ...normalIds],
           },
         },
         offset: offset,
         limit: 10 - (normalToks.rows.length + disabledToks.rows.length),
         order: [["createdAt", "ASC"]],
       });
-      const curr = [
-        ...disabledToks.rows,
-        ...normalToks.rows,
-        ...otherToks.rows,
-      ];
+
+      const curr = [...disabledToks.rows, ...normalToks.rows, ...otherToks.rows];
       const counters = await Counter.findAll();
       const result = curr.map((cu) => {
         const counter = counters.find((item) => item.service === cu.stage);
-        return {
-          token: cu,
-          counter: counter,
-        };
+        return { token: cu, counter: counter };
       });
+
       res.json({
         data: result,
-        totalItems: curr.count,
-        totalPages: Math.ceil(curr.count / pageSize),
+        totalItems: curr.length,
+        totalPages: Math.ceil(curr.length / pageSize),
       });
     } catch (err) {
-      console.log("our error is ",err)
+      console.log("our error is ", err);
       res.status(500).json({ error: "internal server error" });
     }
   }
