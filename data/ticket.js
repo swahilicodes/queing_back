@@ -966,24 +966,26 @@ router.get("/getMedsTickets", async (req, res, next) => {
   const twelveHoursAgo = new Date(Date.now() - 12 * 60 * 60 * 1000);
 
   // Helper function to build where clause
+  // Helper function to build where clause
   const buildWhereClause = (extraConditions = {}) => {
     const whereClause = {
       createdAt: { [Op.gte]: twelveHoursAgo },
       ...extraConditions
     };
 
-    // Only add floor if it has a value and is not 'undefined'
-    if (status !== "all" && floor && floor !== 'undefined') {
-      whereClause.floor = floor;
+    // Check if we have valid filters
+    const hasValidFilters = status && status !== 'all' && status !== 'undefined';
+
+    if (hasValidFilters) {
+      whereClause.status = status;
       whereClause.stage = stage;
       whereClause.isDiabetic = isDiabetic === "true" ? 1 : 0;
       whereClause.isChild = isChild === "true" ? 1 : 0;
-      whereClause.status = status;
-    } else if (status !== "all") {
-      whereClause.stage = stage;
-      whereClause.isDiabetic = isDiabetic === "true" ? 1 : 0;
-      whereClause.isChild = isChild === "true" ? 1 : 0;
-      whereClause.status = status;
+
+      // Only add floor if it has a valid value
+      if (floor && floor !== 'undefined' && floor !== '') {
+        whereClause.floor = floor;
+      }
     }
 
     return whereClause;
