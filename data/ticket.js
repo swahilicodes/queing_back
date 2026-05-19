@@ -518,11 +518,11 @@ router.get("/next_stage", async (req, res, next) => {
 router.get("/priority", authMiddleware, async (req, res, next) => {
   const { ticket_no, data, stage, reason, counter } = req.query;
   const user = req.user;
-  if (ticket_no.trim() === "") {
+  if (!ticket_no || ticket_no.trim() === "") {
     return res.status(400).json({ error: "Token Number is required" });
-  } else if (data.trim() === "") {
+  } else if (!data || data.trim() === "") {
     return res.status(400).json({ error: "data is required" });
-  } else if (stage.trim() === "") {
+  } else if (!stage || stage.trim() === "") {
     return res.status(400).json({ error: "stage is required" });
   } else if (!counter) {
     return res.status(400).json({ error: "counter is required" });
