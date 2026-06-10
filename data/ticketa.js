@@ -74,120 +74,6 @@ router.get("/today_ticks", async (req, res) => {
 });
 
 // create ticket
-// router.post("/create_ticket", async (req, res) => {
-//   const { phone, category, hasMedical, isNHIF, floor, isDiabetic, isChild } =
-//     req.body;
-
-//   if (!phone || phone.trim() === "") {
-//     return res.status(400).json({ error: "Namba ya simu ni lazima" });
-//   }
-
-//   let normalizedPhone = phone.replace(/\s+/g, "");
-
-//   if (!/^[0-9]+$/.test(normalizedPhone)) {
-//     return res.status(400).json({
-//       error: "Namba ya simu lazima iwe tarakimu tu",
-//     });
-//   }
-
-//   if (normalizedPhone.startsWith("0") && normalizedPhone.length === 10) {
-//     normalizedPhone = "255" + normalizedPhone.substring(1);
-//   }
-
-//   if (!/^255[0-9]{9}$/.test(normalizedPhone)) {
-//     return res.status(400).json({
-//       error: "Tafadhali ingiza namba sahihi ya simu",
-//     });
-//   }
-
-//   const transaction = await Ticket.sequelize.transaction();
-
-//   try {
-//     // get latest ticket number safely
-//     const [result] = await Ticket.sequelize.query(
-//       "SELECT ticket_no FROM tickets ORDER BY CAST(ticket_no AS UNSIGNED) DESC LIMIT 1",
-//       { transaction },
-//     );
-
-//     let ticket_no;
-//     if (result.length === 0) {
-//       ticket_no = "001";
-//     } else {
-//       const lastNumber = parseInt(result[0].ticket_no, 10);
-//       ticket_no = (lastNumber + 1).toString().padStart(3, "0");
-//     }
-
-//     // stage & status depend on hasMedical + isNHIF + category
-//     let stage, status;
-//     if (hasMedical) {
-//       stage =
-//         category === "insurance" ? (isNHIF ? "accounts" : "meds") : "accounts";
-
-//       status =
-//         category === "insurance"
-//           ? isNHIF
-//             ? "insurance"
-//             : "waiting"
-//           : "waiting";
-//     } else {
-//       stage = "meds";
-//       status =
-//         category === "insurance"
-//           ? isNHIF
-//             ? "insurance"
-//             : "waiting"
-//           : "waiting";
-//     }
-
-//     // create new ticket
-//     const ticket = await Ticket.create(
-//       {
-//         phone,
-//         ticket_no,
-//         category,
-//         stage,
-//         status,
-//         floor,
-//         isDiabetic,
-//         isChild,
-//       },
-//       { transaction },
-//     );
-
-//     // also create backup
-//     await TokenBackup.create(
-//       {
-//         phone,
-//         ticket_no,
-//         category,
-//         stage,
-//         status,
-//         floor,
-//         isChild,
-//         isDiabetic,
-//       },
-//       { transaction },
-//     );
-
-//     await transaction.commit();
-
-//     // send SMS
-//     sendSMS({
-//       senderId: "MLOGANZILA",
-//       message: `Namba yako ya foleni ni ${ticket.ticket_no} Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
-//       contacts: `${ticket.phone}`,
-//       apiKey: process.env.kilakona_api_key,
-//       apiSecret: process.env.kilakona_api_secret,
-//     }).catch((err) => console.log("SMS error", err));
-
-//     res.json(ticket);
-//   } catch (err) {
-//     await transaction.rollback();
-//     console.error(err);
-//     res.status(500).json({ error: "Failed to create ticket" });
-//   }
-// });
-
 router.post("/create_ticket", async (req, res) => {
   const { phone, category, hasMedical, isNHIF, floor, isDiabetic, isChild } =
     req.body;
@@ -231,18 +117,26 @@ router.post("/create_ticket", async (req, res) => {
       ticket_no = (lastNumber + 1).toString().padStart(3, "0");
     }
 
-    // MODIFIED: Removed waiting time for insurance patients
-    // All patients now go directly to meds/waiting queue
+    // stage & status depend on hasMedical + isNHIF + category
     let stage, status;
-
     if (hasMedical) {
-      // All patients go directly to medical queue
-      stage = "meds";
-      // All patients go to waiting status (no separate insurance/authorization status)
-      status = "waiting";
+      stage =
+        category === "insurance" ? (isNHIF ? "accounts" : "meds") : "accounts";
+
+      status =
+        category === "insurance"
+          ? isNHIF
+            ? "insurance"
+            : "waiting"
+          : "waiting";
     } else {
       stage = "meds";
-      status = "waiting";
+      status =
+        category === "insurance"
+          ? isNHIF
+            ? "insurance"
+            : "waiting"
+          : "waiting";
     }
 
     // create new ticket
@@ -293,6 +187,7 @@ router.post("/create_ticket", async (req, res) => {
     res.status(500).json({ error: "Failed to create ticket" });
   }
 });
+
 
 router.post("/to_meds", async (req, res) => {
   const { id } = req.body;
