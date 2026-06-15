@@ -14,36 +14,38 @@ const cron = require("node-cron");
 const authMiddleware = require("../utils/authMiddleWare");
 const { getIpByPurpose } = require("../functions/get_ip_by_purpose");
 
-cron.schedule("*/15 * * * * *", async () => {
-  try {
-    const time = await InTime.findOne({
-      order: [["createdAt", "ASC"]],
-    });
-    // Get current time minus 10 minutes
-    const tenMinutesAgo = new Date(Date.now() - time.time * 60 * 1000);
-    // Find all tickets with category 'insurance' and createdAt older than 10 minutes
-    const tickets = await Ticket.findAll({
-      where: {
-        category: "insurance",
-        createdAt: {
-          [Op.lt]: tenMinutesAgo,
-        },
-        status: {
-          [Op.ne]: "waiting",
-          [Op.ne]: "pending",
-        },
-      },
-    });
 
-    // Loop through tickets and update their status
-    for (const ticket of tickets) {
-      ticket.status = "waiting";
-      await ticket.save();
-    }
-  } catch (error) {
-    console.error("Error in cron job:", error);
-  }
-});
+// fixed the issue of insurance ticket waiting
+// cron.schedule("*/15 * * * * *", async () => {
+//   try {
+//     const time = await InTime.findOne({
+//       order: [["createdAt", "ASC"]],
+//     });
+//     // Get current time minus 10 minutes
+//     //const tenMinutesAgo = new Date(Date.now() - time.time * 60 * 1000);
+//     // Find all tickets with category 'insurance' and createdAt older than 10 minutes
+//     const tickets = await Ticket.findAll({
+//       where: {
+//         category: "insurance",
+//         // createdAt: {
+//         //   [Op.lt]: tenMinutesAgo,
+//         // },
+//         status: {
+//           [Op.ne]: "waiting",
+//           [Op.ne]: "pending",
+//         },
+//       },
+//     });
+
+//     // Loop through tickets and update their status
+//     for (const ticket of tickets) {
+//       ticket.status = "waiting";
+//       await ticket.save();
+//     }
+//   } catch (error) {
+//     console.error("Error in cron job:", error);
+//   }
+// });
 
 router.get("/get_all_the_tickets", async (req, res) => {
   try {
