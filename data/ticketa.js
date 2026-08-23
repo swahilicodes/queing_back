@@ -54,27 +54,60 @@ async function sendSMSNextTicket(currentTicketNo) {
   try {
     if (!currentTicketNo) return;
 
-    const currentNum = parseInt(currentTicketNo, 10);
-    if (isNaN(currentNum)) return;
-
-    const nextTicketNo = (currentNum + 1).toString().padStart(3, "0");
-
-    let nextTicket = await Ticket.findOne({
-      where: { ticket_no: nextTicketNo }
+    // 1. Fetch current ticket to identify floor, stage, and clinic_code
+    const currentTicket = await Ticket.findOne({
+      where: { ticket_no: currentTicketNo }
     });
 
-    if (!nextTicket) {
-      const currentTicket = await Ticket.findOne({
-        where: { ticket_no: currentTicketNo }
-      });
+    if (!currentTicket) {
+      console.log(`[SMS] Current ticket ${currentTicketNo} not found in DB`);
+      return;
+    }
 
-      const currentId = currentTicket ? currentTicket.id : 0;
+    // 2. Query next waiting ticket on the SAME floor and stage
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const whereClause = {
+      serving: false,
+      createdAt: { [Op.gte]: startOfDay },
+      id: { [Op.gt]: currentTicket.id }
+    };
+
+    if (currentTicket.floor) {
+      whereClause.floor = currentTicket.floor;
+    }
+
+    if (currentTicket.stage) {
+      whereClause.stage = currentTicket.stage;
+    }
+
+    if (currentTicket.clinic_code) {
+      whereClause.clinic_code = currentTicket.clinic_code;
+    }
+
+    let nextTicket = await Ticket.findOne({
+      where: whereClause,
+      order: [
+        ["disabled", "DESC"],
+        ["createdAt", "ASC"]
+      ]
+    });
+
+    // Fallback: search for any unserved ticket on same floor & stage if ID > current.id yields none
+    if (!nextTicket) {
+      const fallbackClause = {
+        serving: false,
+        createdAt: { [Op.gte]: startOfDay },
+        id: { [Op.ne]: currentTicket.id }
+      };
+
+      if (currentTicket.floor) fallbackClause.floor = currentTicket.floor;
+      if (currentTicket.stage) fallbackClause.stage = currentTicket.stage;
+      if (currentTicket.clinic_code) fallbackClause.clinic_code = currentTicket.clinic_code;
 
       nextTicket = await Ticket.findOne({
-        where: {
-          serving: false,
-          id: { [Op.gt]: currentId }
-        },
+        where: fallbackClause,
         order: [
           ["disabled", "DESC"],
           ["createdAt", "ASC"]
@@ -88,7 +121,7 @@ async function sendSMSNextTicket(currentTicketNo) {
         phone = "255" + phone.substring(1);
       }
 
-      console.log(`[SMS] Sending next-in-line notification to ticket ${nextTicket.ticket_no} (Phone: ${phone})`);
+      console.log(`[SMS] Sending next-in-line notification to ticket ${nextTicket.ticket_no} (Floor: ${nextTicket.floor}, Stage: ${nextTicket.stage}, Phone: ${phone})`);
 
       sendSMS({
         senderId: "MLOGANZILA",
@@ -98,7 +131,7 @@ async function sendSMSNextTicket(currentTicketNo) {
         apiSecret: process.env.kilakona_api_secret,
       }).catch((err) => console.log("SMS next ticket error:", err));
     } else {
-      console.log(`[SMS] No upcoming ticket found after ticket ${currentTicketNo}`);
+      console.log(`[SMS] No upcoming ticket found on floor "${currentTicket.floor}" after ticket ${currentTicketNo}`);
     }
   } catch (err) {
     console.error("Error in sendSMSNextTicket:", err);
