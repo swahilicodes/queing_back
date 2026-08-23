@@ -46,6 +46,48 @@ async function sendSMS({
   }
 }
 
+/**
+ * Sends an SMS text notification to the next ticket in queue (e.g. ticket 002 when ticket 001 is called).
+ * Does NOT invoke audio/speaker calls; only sends text SMS notification.
+ */
+async function sendSMSNextTicket(currentTicketNo) {
+  try {
+    const currentTicket = await Ticket.findOne({
+      where: { ticket_no: currentTicketNo }
+    });
+    if (!currentTicket) return;
+
+    const nextTicket = await Ticket.findOne({
+      where: {
+        stage: currentTicket.stage,
+        status: "waiting",
+        serving: false,
+        id: { [Op.gt]: currentTicket.id }
+      },
+      order: [
+        ["disabled", "DESC"],
+        ["createdAt", "ASC"]
+      ]
+    });
+
+    if (nextTicket && nextTicket.phone) {
+      let phone = nextTicket.phone.replace(/\s+/g, "");
+      if (phone.startsWith("0") && phone.length === 10) {
+        phone = "255" + phone.substring(1);
+      }
+      sendSMS({
+        senderId: "MLOGANZILA",
+        message: `Namba yako ya foleni ni ${nextTicket.ticket_no} inafuata. Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
+        contacts: phone,
+        apiKey: process.env.kilakona_api_key,
+        apiSecret: process.env.kilakona_api_secret,
+      }).catch((err) => console.log("SMS next ticket error", err));
+    }
+  } catch (err) {
+    console.error("Error sending SMS to next ticket:", err);
+  }
+}
+
 router.get("/today_ticks", async (req, res) => {
   // Set time boundaries in local time (UTC+3)
   const now = new Date();
@@ -233,5 +275,8 @@ router.post("/priotize", async (req, res) => {
     res.status(500).json({ error: err });
   }
 });
+
+router.sendSMS = sendSMS;
+router.sendSMSNextTicket = sendSMSNextTicket;
 
 module.exports = router;
