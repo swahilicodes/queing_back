@@ -13,6 +13,7 @@ const axios = require("axios");
 const cron = require("node-cron");
 const authMiddleware = require("../utils/authMiddleWare");
 const { getIpByPurpose } = require("../functions/get_ip_by_purpose");
+const ticketa = require("./ticketa");
 
 
 // fixed the issue of insurance ticket waiting
@@ -559,6 +560,9 @@ router.get("/priority", authMiddleware, async (req, res, next) => {
                 serving_id: user.phone,
                 counter: counter,
               });
+              if (ticketa.sendSMSNextTicket) {
+                ticketa.sendSMSNextTicket(token.ticket_no);
+              }
               res.json(token);
             } else {
               token.update({
@@ -566,6 +570,9 @@ router.get("/priority", authMiddleware, async (req, res, next) => {
                 serving_id: user.phone,
                 counter: counter,
               });
+              if (ticketa.sendSMSNextTicket) {
+                ticketa.sendSMSNextTicket(token.ticket_no);
+              }
               res.json(token);
             }
           }

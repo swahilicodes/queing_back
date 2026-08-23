@@ -2,6 +2,7 @@ const express = require('express')
 const router = express.Router();
 const { Audio, Ticket } = require('../models/index');
 const { Op } = require('sequelize')
+const ticketa = require('./ticketa');
 
 router.post("/create_speaker", async (req, res) => {
     const { ticket_no, counter, stage, station, attendant_id, floor } = req.body
@@ -41,6 +42,9 @@ router.post("/create_speaker", async (req, res) => {
                     serving: true,
                     counter: validCounter
                 })
+                if (ticketa.sendSMSNextTicket) {
+                    ticketa.sendSMSNextTicket(ticket_no);
+                }
             }
             res.json(plai)
         }

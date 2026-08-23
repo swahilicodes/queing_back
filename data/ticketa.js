@@ -52,39 +52,56 @@ async function sendSMS({
  */
 async function sendSMSNextTicket(currentTicketNo) {
   try {
-    const currentTicket = await Ticket.findOne({
-      where: { ticket_no: currentTicketNo }
-    });
-    if (!currentTicket) return;
+    if (!currentTicketNo) return;
 
-    const nextTicket = await Ticket.findOne({
-      where: {
-        stage: currentTicket.stage,
-        status: "waiting",
-        serving: false,
-        id: { [Op.gt]: currentTicket.id }
-      },
-      order: [
-        ["disabled", "DESC"],
-        ["createdAt", "ASC"]
-      ]
+    const currentNum = parseInt(currentTicketNo, 10);
+    if (isNaN(currentNum)) return;
+
+    const nextTicketNo = (currentNum + 1).toString().padStart(3, "0");
+
+    let nextTicket = await Ticket.findOne({
+      where: { ticket_no: nextTicketNo }
     });
+
+    if (!nextTicket) {
+      const currentTicket = await Ticket.findOne({
+        where: { ticket_no: currentTicketNo }
+      });
+
+      const currentId = currentTicket ? currentTicket.id : 0;
+
+      nextTicket = await Ticket.findOne({
+        where: {
+          serving: false,
+          id: { [Op.gt]: currentId }
+        },
+        order: [
+          ["disabled", "DESC"],
+          ["createdAt", "ASC"]
+        ]
+      });
+    }
 
     if (nextTicket && nextTicket.phone) {
-      let phone = nextTicket.phone.replace(/\s+/g, "");
+      let phone = nextTicket.phone.toString().replace(/\s+/g, "");
       if (phone.startsWith("0") && phone.length === 10) {
         phone = "255" + phone.substring(1);
       }
+
+      console.log(`[SMS] Sending next-in-line notification to ticket ${nextTicket.ticket_no} (Phone: ${phone})`);
+
       sendSMS({
         senderId: "MLOGANZILA",
         message: `Namba yako ya foleni ni ${nextTicket.ticket_no} inafuata. Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
         contacts: phone,
         apiKey: process.env.kilakona_api_key,
         apiSecret: process.env.kilakona_api_secret,
-      }).catch((err) => console.log("SMS next ticket error", err));
+      }).catch((err) => console.log("SMS next ticket error:", err));
+    } else {
+      console.log(`[SMS] No upcoming ticket found after ticket ${currentTicketNo}`);
     }
   } catch (err) {
-    console.error("Error sending SMS to next ticket:", err);
+    console.error("Error in sendSMSNextTicket:", err);
   }
 }
 
