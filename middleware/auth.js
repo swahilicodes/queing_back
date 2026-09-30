@@ -11,7 +11,7 @@ const authenticateToken = async (req, res, next) => {
   }else{
     try {
         // Decode the token
-        const decoded = jwt.verify(token, "swahili codes");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "swahili codes");
     
         // Fetch the user from the database
         const user = await User.findOne({

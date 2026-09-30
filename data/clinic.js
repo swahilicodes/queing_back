@@ -34,6 +34,7 @@ router.post('/create_clinic', async (req, res) => {
 // get jeeva clinics
 router.get('/jeeva_clinics', async (req, res) => {
     try {
+        const ip = await getIpByPurpose('jeeva');
         axios.get(`http://${ip}/dev/jeeva_api/swagger/clinics`).then((data)=> {
             if(data.status === 200){
                 res.json(data.data)
@@ -78,8 +79,12 @@ router.get("/get_display_clinics", async (req, res) => {
     }
   });
 
-const job = cron.schedule('0 0 * * *', async () => {
-  const ip = await getIpByPurpose('jeeva')
+const clinicsSyncSchedule = process.env.CRON_SCHEDULE_CLINICS_SYNC || '0 0 * * *';
+const cronTimezone = process.env.CRON_TIMEZONE || 'Africa/Dar_es_Salaam';
+
+if (process.env.ENABLE_CRON_JOBS !== 'false') {
+  const job = cron.schedule(clinicsSyncSchedule, async () => {
+    const ip = await getIpByPurpose('jeeva')
     try {
       // Fetch data from the API
       const response = await axios.get(`http://${ip}/dev/jeeva_api/swagger/clinics`);
@@ -120,10 +125,11 @@ const job = cron.schedule('0 0 * * *', async () => {
     }
   }, {
     scheduled: true, // ensures job is scheduled immediately
-    timezone: "Africa/Dar_es_Salaam" // optional: set your local timezone
+    timezone: cronTimezone // optional: set your local timezone
   });
   
   // Start the cron job explicitly (optional if `scheduled: true`)
   job.start();
+}
 
 module.exports = router;

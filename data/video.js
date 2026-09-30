@@ -58,10 +58,10 @@ router.post('/upload', upload.single('file'), async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }else{
+        const baseUrl = process.env.APP_BASE_URL || process.env.BASE_URL || `http://localhost:${process.env.PORT || 5005}`;
         res.json({
           message: 'File uploaded successfully',
-          url: `http://192.168.30.246:5000/public/${req.file.filename}`
-          //url: `http://localhost:5000/public/${req.file.filename}`
+          url: `${baseUrl}/public/${req.file.filename}`
         });
     }
   } catch (err) {

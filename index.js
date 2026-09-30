@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path')
 const bodyParser = require('body-parser');
@@ -44,7 +45,7 @@ const corsOptions = {
 
 const app = express();
 app.use(express.urlencoded({ extended: true }));
-const port = 5005;
+const port = process.env.PORT || 5005;
 app.use(cors(corsOptions));
 
 app.use(cors());
@@ -85,23 +86,25 @@ app.use(express.json())
 
 console.log('starting cron setup...');
 
-cron.schedule('0 0 * * *', async () => {
+const cronResetSchedule = process.env.CRON_SCHEDULE_DAILY_RESET || '0 0 * * *';
+const cronTimezone = process.env.CRON_TIMEZONE || 'Africa/Dar_es_Salaam';
 
-  console.log('Cron triggered');
+if (process.env.ENABLE_CRON_JOBS !== 'false') {
+  cron.schedule(cronResetSchedule, async () => {
+    console.log('Cron triggered');
 
-  try {
-    await Ticket.destroy({
-      truncate: true
-    });
-    console.log('All tokens deleted successfully at 00:00');
-  } catch (error) {
-    console.error('Error deleting tokens:', error);
-  }
-}
-  ,
-  {
-    timezone: 'Africa/Dar_es_Salaam'
+    try {
+      await Ticket.destroy({
+        truncate: true
+      });
+      console.log('All tokens deleted successfully at scheduled time');
+    } catch (error) {
+      console.error('Error deleting tokens:', error);
+    }
+  }, {
+    timezone: cronTimezone
   });
+}
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });

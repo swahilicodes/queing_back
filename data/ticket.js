@@ -17,37 +17,40 @@ const ticketa = require("./ticketa");
 
 
 // fixed the issue of insurance ticket waiting
-cron.schedule("*/2 * * * * *", async () => {
-  try {
-    const time = await InTime.findOne({
-      order: [["createdAt", "ASC"]],
-    });
-    // Get current time minus 10 minutes
-    //const tenMinutesAgo = new Date(Date.now() - time.time * 60 * 1000);
-    const tenMinutesAgo = new Date(Date.now() - 0 * 60 * 1000);
-    // Find all tickets with category 'insurance' and createdAt older than 10 minutes
-    const tickets = await Ticket.findAll({
-      where: {
-        category: "insurance",
-        createdAt: {
-          [Op.lt]: tenMinutesAgo,
+if (process.env.ENABLE_CRON_JOBS !== 'false') {
+  const insuranceCheckSchedule = process.env.CRON_SCHEDULE_INSURANCE_CHECK || "*/2 * * * * *";
+  cron.schedule(insuranceCheckSchedule, async () => {
+    try {
+      const time = await InTime.findOne({
+        order: [["createdAt", "ASC"]],
+      });
+      // Get current time minus 10 minutes
+      //const tenMinutesAgo = new Date(Date.now() - time.time * 60 * 1000);
+      const tenMinutesAgo = new Date(Date.now() - 0 * 60 * 1000);
+      // Find all tickets with category 'insurance' and createdAt older than 10 minutes
+      const tickets = await Ticket.findAll({
+        where: {
+          category: "insurance",
+          createdAt: {
+            [Op.lt]: tenMinutesAgo,
+          },
+          status: {
+            [Op.ne]: "waiting",
+            [Op.ne]: "pending",
+          },
         },
-        status: {
-          [Op.ne]: "waiting",
-          [Op.ne]: "pending",
-        },
-      },
-    });
+      });
 
-    // Loop through tickets and update their status
-    for (const ticket of tickets) {
-      ticket.status = "waiting";
-      await ticket.save();
+      // Loop through tickets and update their status
+      for (const ticket of tickets) {
+        ticket.status = "waiting";
+        await ticket.save();
+      }
+    } catch (error) {
+      console.error("Error in insurance cron job:", error.message || error);
     }
-  } catch (error) {
-    console.error("Error in cron job:", error);
-  }
-});
+  });
+}
 
 router.get("/get_all_the_tickets", async (req, res) => {
   try {
@@ -1579,37 +1582,40 @@ router.get("/clinic_patient", async (req, res, next) => {
     res.status(500).json({ error: err });
   }
 });
-// Cron job to find unpaid tickets every 5 minutes
-cron.schedule("*/5 * * * * *", async () => {
-  const ip = await getIpByPurpose("jeeva");
-  try {
-    const unpaidTickets = await Ticket.findAll({
-      where: { paid: false, stage: "nurse_station" },
-    });
-    for (const ticket of unpaidTickets) {
-      try {
-        const response = await axios.get(
-          `http://${ip}/dev/jeeva_api/swagger/consultation/${ticket.mr_no}`,
-        );
-        if (
-          response.data.status === 201 &&
-          response.data.data.consStatus === "Not Paid"
-        ) {
-        } else if (
-          response.data.status === 200 &&
-          response.data.data.consStatus === "Paid"
-        ) {
-          ticket.update({
-            paid: true,
-            clinic_code: data.data.clinicCode,
-          });
+// Cron job to find unpaid tickets
+if (process.env.ENABLE_CRON_JOBS !== 'false') {
+  const unpaidCheckSchedule = process.env.CRON_SCHEDULE_UNPAID_CHECK || "*/5 * * * * *";
+  cron.schedule(unpaidCheckSchedule, async () => {
+    const ip = await getIpByPurpose("jeeva");
+    try {
+      const unpaidTickets = await Ticket.findAll({
+        where: { paid: false, stage: "nurse_station" },
+      });
+      for (const ticket of unpaidTickets) {
+        try {
+          const response = await axios.get(
+            `http://${ip}/dev/jeeva_api/swagger/consultation/${ticket.mr_no}`,
+          );
+          if (
+            response.data.status === 201 &&
+            response.data.data.consStatus === "Not Paid"
+          ) {
+          } else if (
+            response.data.status === 200 &&
+            response.data.data.consStatus === "Paid"
+          ) {
+            ticket.update({
+              paid: true,
+              clinic_code: response.data.data?.clinicCode,
+            });
+          }
+        } catch (error) {
+          console.error("Error checking ticket payment status:", error.message || error);
         }
-      } catch (error) {
-        res.status(500).json({ error: error });
       }
+    } catch (error) {
+      console.error("Error in unpaid tickets cron job:", error.message || error);
     }
-  } catch (error) {
-    res.status(500).json({ error: error });
-  }
-});
+  });
+}
 module.exports = router;

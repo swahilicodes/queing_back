@@ -14,14 +14,14 @@ const {
 } = require("../models/index");
 
 async function sendSMS({
-  senderId,
+  senderId = process.env.KILAKONA_SENDER_ID || "MLOGANZILA",
   message,
   contacts,
-  apiKey,
-  apiSecret,
-  deliveryReportUrl = "https://your-server.com/delivery-callback",
+  apiKey = process.env.KILAKONA_API_KEY || process.env.kilakona_api_key,
+  apiSecret = process.env.KILAKONA_API_SECRET || process.env.kilakona_api_secret,
+  deliveryReportUrl = process.env.KILAKONA_CALLBACK_URL || "https://your-server.com/delivery-callback",
 }) {
-  const url = "https://messaging.kilakona.co.tz/api/v1/vendor/message/send";
+  const url = process.env.KILAKONA_URL || "https://messaging.kilakona.co.tz/api/v1/vendor/message/send";
 
   const data = {
     senderId,
@@ -124,11 +124,11 @@ async function sendSMSNextTicket(currentTicketNo) {
       console.log(`[SMS] Sending next-in-line notification to ticket ${nextTicket.ticket_no} (Floor: ${nextTicket.floor}, Stage: ${nextTicket.stage}, Phone: ${phone})`);
 
       sendSMS({
-        senderId: "MLOGANZILA",
+        senderId: process.env.KILAKONA_SENDER_ID || "MLOGANZILA",
         message: `Namba yako ya foleni ni ${nextTicket.ticket_no} inafuata. Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
         contacts: phone,
-        apiKey: process.env.kilakona_api_key,
-        apiSecret: process.env.kilakona_api_secret,
+        apiKey: process.env.KILAKONA_API_KEY || process.env.kilakona_api_key,
+        apiSecret: process.env.KILAKONA_API_SECRET || process.env.kilakona_api_secret,
       }).catch((err) => console.log("SMS next ticket error:", err));
     } else {
       console.log(`[SMS] No upcoming ticket found on floor "${currentTicket.floor}" after ticket ${currentTicketNo}`);
@@ -265,11 +265,11 @@ router.post("/create_ticket", async (req, res) => {
 
     // send SMS
     sendSMS({
-      senderId: "MLOGANZILA",
+      senderId: process.env.KILAKONA_SENDER_ID || "MLOGANZILA",
       message: `Namba yako ya foleni ni ${ticket.ticket_no} Tafadhali kaa karibu utaitwa muda si mrefu karibu HOSPITALI YA TAIFA MUHIMBILI MLOGANZILA`,
       contacts: `${ticket.phone}`,
-      apiKey: process.env.kilakona_api_key,
-      apiSecret: process.env.kilakona_api_secret,
+      apiKey: process.env.KILAKONA_API_KEY || process.env.kilakona_api_key,
+      apiSecret: process.env.KILAKONA_API_SECRET || process.env.kilakona_api_secret,
     }).catch((err) => console.log("SMS error", err));
 
     res.json(ticket);
